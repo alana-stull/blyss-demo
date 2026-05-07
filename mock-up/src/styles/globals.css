@@ -1,0 +1,124 @@
+@import url('https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&display=swap');
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --font-size: 16px;
+  
+  /* Blyss brand colors */
+  --blyss-primary-text: #333333;
+  --blyss-deep-blue: #375169;
+  --blyss-primary-blue: #5ba8d3;
+  --blyss-secondary-blue: #b7d3e0;
+  --blyss-accent: #f2c05a;
+  --blyss-secondary-text: #8b8f94;
+  --blyss-divider: #e3e4e6;
+  --blyss-background: #fcfcfc;
+  
+  --background: #fcfcfc;
+  --foreground: #333333;
+  --card: #ffffff;
+  --card-foreground: #333333;
+  --popover: #ffffff;
+  --popover-foreground: #333333;
+  --primary: #5ba8d3;
+  --primary-foreground: #ffffff;
+  --secondary: #b7d3e0;
+  --secondary-foreground: #333333;
+  --muted: #e3e4e6;
+  --muted-foreground: #8b8f94;
+  --accent: #f2c05a;
+  --accent-foreground: #333333;
+  --destructive: #d4183d;
+  --destructive-foreground: #ffffff;
+  --border: #e3e4e6;
+  --input: #e3e4e6;
+  --input-background: #ffffff;
+  --switch-background: #cbced4;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-normal: 400;
+  --ring: #5ba8d3;
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-input-background: var(--input-background);
+  --color-switch-background: var(--switch-background);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: 'Figtree', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+}
+
+/**
+ * Base typography
+ */
+@layer base {
+  :where(:not(:has([class*=' text-']), :not(:has([class^='text-'])))) {
+    h1 {
+      font-weight: var(--font-weight-bold);
+    }
+
+    h2 {
+      font-weight: var(--font-weight-semibold);
+    }
+
+    h3 {
+      font-weight: var(--font-weight-semibold);
+    }
+
+    h4 {
+      font-weight: var(--font-weight-medium);
+    }
+
+    label {
+      font-weight: var(--font-weight-medium);
+    }
+
+    button {
+      font-weight: var(--font-weight-medium);
+    }
+
+    input {
+      font-weight: var(--font-weight-normal);
+    }
+  }
+}
+
+html {
+  font-size: var(--font-size);
+}
