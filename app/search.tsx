@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
 import type { Venue } from '@/lib/venues';
 
@@ -185,7 +186,7 @@ export default function SearchScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F7F8FA' },
+  safe: { flex: 1, backgroundColor: Colors.screenBackground },
 
   // Search
   searchWrap: {
@@ -200,7 +201,7 @@ const s = StyleSheet.create({
     height: 44,
   },
   searchIcon: { marginRight: 8 },
-  input: { flex: 1, fontSize: 15, color: '#1A1A2E' },
+  input: { flex: 1, fontSize: 15, color: Colors.black },
 
   // Toggle
   toggle: {
@@ -218,15 +219,15 @@ const s = StyleSheet.create({
     alignItems: 'center',
   },
   toggleBtnActive: {
-    backgroundColor: '#375169',
+    backgroundColor: Colors.deepSlate,
   },
   toggleLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
   },
   toggleLabelActive: {
-    color: '#FFFFFF',
+    color: Colors.white,
     fontWeight: '600',
   },
 
@@ -236,7 +237,7 @@ const s = StyleSheet.create({
   // Card
   card: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -248,7 +249,7 @@ const s = StyleSheet.create({
   thumb: {
     width: 110,
     height: 110,
-    backgroundColor: '#E3E4E6',
+    backgroundColor: Colors.lightGrey,
   },
   cardBody: {
     flex: 1,
@@ -259,12 +260,12 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: Colors.black,
     letterSpacing: -0.3,
   },
   cardSub: {
     fontSize: 12,
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
     marginBottom: 2,
   },
   metaRow: {
@@ -274,7 +275,7 @@ const s = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
   },
 
   // Empty
@@ -282,6 +283,6 @@ const s = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 60,
     fontSize: 15,
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
   },
 });

@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
 
 // ─── Mock journal entries ────────────────────────────────────────────────────
@@ -88,7 +89,7 @@ function Stars({ rating }: { rating: number }) {
           key={i}
           name={i <= rating ? 'star' : 'star-outline'}
           size={16}
-          color="#F2C05A"
+          color={Colors.accent}
         />
       ))}
     </View>
@@ -113,7 +114,7 @@ export default function JournalScreen() {
       {/* Header */}
       <View style={s.header}>
         <Pressable style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={20} color="#1A1A2E" />
+          <Ionicons name="arrow-back" size={20} color={Colors.black} />
         </Pressable>
         <Text style={s.headerTitle}>Event Journal</Text>
         <View style={{ width: 32 }} />
@@ -169,7 +170,7 @@ export default function JournalScreen() {
                   <Stars rating={entry.rating} />
                 </View>
                 <View style={s.metaRow}>
-                  <Ionicons name="location-outline" size={13} color="#8B8F94" />
+                  <Ionicons name="location-outline" size={13} color={Colors.naturalGrey} />
                   <Text style={s.metaText}>{entry.venue_name}</Text>
                 </View>
                 {!!entry.note && (
@@ -196,7 +197,7 @@ export default function JournalScreen() {
 }
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F7F8FA' },
+  safe: { flex: 1, backgroundColor: Colors.screenBackground },
   scroll: { paddingBottom: 20 },
 
   // Header
@@ -206,10 +207,10 @@ const s = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.screenBackground,
   },
   backBtn: { width: 32, height: 32, justifyContent: 'center' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#1A1A2E' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: Colors.black },
 
   // Filter pills
   filterRow: {
@@ -223,17 +224,17 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
-    backgroundColor: '#fff',
+    borderColor: Colors.lightGrey,
+    backgroundColor: Colors.white,
   },
-  pillActive: { backgroundColor: '#1A1A2E', borderColor: '#1A1A2E' },
-  pillText: { fontSize: 14, fontWeight: '500', color: '#8B8F94' },
-  pillTextActive: { color: '#fff', fontWeight: '600' },
+  pillActive: { backgroundColor: Colors.black, borderColor: Colors.black },
+  pillText: { fontSize: 14, fontWeight: '500', color: Colors.naturalGrey },
+  pillTextActive: { color: Colors.white, fontWeight: '600' },
 
   // Stats
   statsCard: {
     flexDirection: 'row',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     marginHorizontal: 16,
     paddingVertical: 20,
@@ -246,15 +247,15 @@ const s = StyleSheet.create({
     elevation: 2,
   },
   stat: { flex: 1, alignItems: 'center', gap: 3 },
-  statNum: { fontSize: 22, fontWeight: '800', color: '#1A1A2E', letterSpacing: -0.5 },
-  statLabel: { fontSize: 12, color: '#8B8F94', fontWeight: '500' },
-  statDivider: { width: 1, backgroundColor: '#E3E4E6', marginVertical: 4 },
+  statNum: { fontSize: 22, fontWeight: '800', color: Colors.black, letterSpacing: -0.5 },
+  statLabel: { fontSize: 12, color: Colors.naturalGrey, fontWeight: '500' },
+  statDivider: { width: 1, backgroundColor: Colors.lightGrey, marginVertical: 4 },
 
   // Section
   sectionLabel: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
     paddingHorizontal: 16,
     marginBottom: 12,
   },
@@ -264,7 +265,7 @@ const s = StyleSheet.create({
 
   // Card
   card: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     overflow: 'hidden',
     shadowColor: '#000',
@@ -276,7 +277,7 @@ const s = StyleSheet.create({
   cardImage: {
     width: '100%',
     height: 200,
-    backgroundColor: '#E3E4E6',
+    backgroundColor: Colors.lightGrey,
   },
   cardBody: {
     padding: 16,
@@ -290,14 +291,14 @@ const s = StyleSheet.create({
   cardTitle: {
     fontSize: 17,
     fontWeight: '700',
-    color: '#1A1A2E',
+    color: Colors.black,
     letterSpacing: -0.3,
     flex: 1,
     marginRight: 8,
   },
   stars: { flexDirection: 'row', gap: 2 },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  metaText: { fontSize: 13, color: '#8B8F94' },
+  metaText: { fontSize: 13, color: Colors.naturalGrey },
   note: { fontSize: 14, color: '#4A4A5A', lineHeight: 20 },
   dateText: { fontSize: 12, color: '#B0B4BA' },
 
@@ -309,10 +310,10 @@ const s = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: '#5BA8D3',
+    backgroundColor: Colors.primaryBlue,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#5BA8D3',
+    shadowColor: Colors.primaryBlue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,

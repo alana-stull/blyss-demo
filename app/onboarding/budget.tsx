@@ -1,89 +1,129 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
-import OnboardingHeader from '@/components/OnboardingHeader';
-import { saveDraft } from '@/lib/store';
+import { Check } from 'lucide-react-native';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { useOnboarding } from '@/lib/OnboardingContext';
 
-const OPTIONS = [
-  { label: 'Under $20',            value: 'under20', sub: 'Budget-friendly only' },
-  { label: '$20–40',               value: '20to40',  sub: 'Most mid-range spots' },
-  { label: '$40–75',               value: '40to75',  sub: 'Nice nights out' },
-  { label: "No limit if it's great", value: 'nolimit', sub: 'Show me everything' },
+const BUDGETS = [
+  { label: '$', desc: 'Budget-friendly' },
+  { label: '$$', desc: 'Mid-range' },
+  { label: '$$$', desc: 'Treat yourself' },
 ];
 
 export default function BudgetScreen() {
+  const { updateData } = useOnboarding();
   const [selected, setSelected] = useState<string | null>(null);
 
-  async function handleContinue() {
+  function handleContinue() {
     if (!selected) return;
-    await saveDraft({ budget_tier: selected });
-    router.push('/onboarding/painpoint');
+    // Map $ -> under20 etc if needed by context
+    let budgetValue: 'under20' | '20to40' | '40to75' = 'under20';
+    if (selected === '$$') budgetValue = '20to40';
+    if (selected === '$$$') budgetValue = '40to75';
+
+    updateData({ budget: budgetValue });
+    router.push('/onboarding/calendar');
   }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <OnboardingHeader step={9} />
-      <ScrollView contentContainerStyle={s.content}>
-        <Text style={s.heading}>What's your budget?</Text>
-        <Text style={s.sub}>
-          So we don't show you things outside your range.
-        </Text>
-
-        <View style={s.options}>
-          {OPTIONS.map(opt => {
-            const on = selected === opt.value;
-            return (
-              <TouchableOpacity
-                key={opt.value}
-                style={[s.option, on && s.optionOn]}
-                onPress={() => setSelected(opt.value)}
+    <OnboardingLayout
+      progress={73}
+      question="What's your usual budget?"
+      subtitle="This helps us recommend plans you'll love."
+      continueDisabled={!selected}
+      onContinue={handleContinue}
+    >
+      <View style={s.container}>
+        {BUDGETS.map((option, idx) => (
+          <Pressable
+            key={idx}
+            style={[
+              s.option,
+              selected === option.label && s.optionActive,
+            ]}
+            onPress={() => setSelected(option.label)}
+          >
+            <View style={s.textContainer}>
+              <Text
+                style={[
+                  s.label,
+                  selected === option.label && s.labelActive,
+                ]}
               >
-                <View style={{ flex: 1 }}>
-                  <Text style={[s.optionLabel, on && s.optionLabelOn]}>{opt.label}</Text>
-                  <Text style={s.optionSub}>{opt.sub}</Text>
-                </View>
-                <View style={[s.radio, on && s.radioOn]}>
-                  {on && <View style={s.dot} />}
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      <View style={s.footer}>
-        <TouchableOpacity
-          style={[s.btn, !selected && s.btnOff]}
-          onPress={handleContinue}
-          disabled={!selected}
-        >
-          <Text style={s.btnText}>Continue</Text>
-        </TouchableOpacity>
+                {option.label}
+              </Text>
+              <Text
+                style={[
+                  s.desc,
+                  selected === option.label && s.descActive,
+                ]}
+              >
+                {option.desc}
+              </Text>
+            </View>
+            <View style={[s.circle, selected === option.label && s.circleActive]}>
+              {selected === option.label && (
+                <Check size={14} color="white" strokeWidth={2.5} />
+              )}
+            </View>
+          </Pressable>
+        ))}
       </View>
-    </SafeAreaView>
+    </OnboardingLayout>
   );
 }
 
 const s = StyleSheet.create({
-  safe:         { flex: 1, backgroundColor: '#fff' },
-  content:      { padding: 24, paddingBottom: 8 },
-  heading:      { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:          { fontSize: 15, color: '#8B8F94', marginBottom: 28 },
-  options:      { gap: 12 },
-  option:       { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1.5,
-                  borderColor: '#E3E4E6', borderRadius: 14, paddingVertical: 16,
-                  paddingHorizontal: 18, backgroundColor: '#fff' },
-  optionOn:     { borderColor: '#5BA8D3', backgroundColor: '#EBF5FB' },
-  optionLabel:  { fontSize: 16, fontWeight: '600', color: '#1A1A2E', marginBottom: 2 },
-  optionLabelOn:{ color: '#375169' },
-  optionSub:    { fontSize: 13, color: '#8B8F94' },
-  radio:        { width: 22, height: 22, borderRadius: 11, borderWidth: 1.5,
-                  borderColor: '#E3E4E6', alignItems: 'center', justifyContent: 'center' },
-  radioOn:      { borderColor: '#5BA8D3' },
-  dot:          { width: 11, height: 11, borderRadius: 6, backgroundColor: '#5BA8D3' },
-  footer:       { padding: 24, paddingTop: 8 },
-  btn:          { borderRadius: 14, paddingVertical: 18, alignItems: 'center', backgroundColor: '#375169' },
-  btnOff:       { backgroundColor: '#A8D4EC' },
-  btnText:      { color: '#fff', fontSize: 16, fontWeight: '700' },
+  container: {
+    gap: 12,
+    marginTop: 8,
+  },
+  option: {
+    height: 64,
+    borderWidth: 1,
+    borderColor: '#E3E4E6',
+    borderRadius: 10,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
+  },
+  optionActive: {
+    backgroundColor: '#E8F2F8',
+    borderColor: '#4A7FA5',
+  },
+  textContainer: {
+    gap: 2,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333333',
+  },
+  labelActive: {
+    color: '#375169',
+  },
+  desc: {
+    fontSize: 12,
+    color: '#8B8F94',
+  },
+  descActive: {
+    color: '#375169',
+  },
+  circle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1.5,
+    borderColor: '#E3E4E6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+  },
+  circleActive: {
+    borderColor: '#4A7FA5',
+    backgroundColor: '#4A7FA5',
+  },
 });

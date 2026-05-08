@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { router } from 'expo-router';
+import { Colors } from '@/constants/Colors';
 
 interface Props {
   step: number;
@@ -35,7 +36,7 @@ export default function OnboardingHeader({ step, total = 11, showBack = true }: 
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: Colors.white,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 16,
@@ -55,7 +56,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 10,
     height: 1.8,
-    backgroundColor: '#1A1A2E',
+    backgroundColor: Colors.black,
     borderRadius: 2,
   },
   chevronTop: {
@@ -74,9 +75,9 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   dashFilled: {
-    backgroundColor: '#5BA8D3',
+    backgroundColor: Colors.primaryBlue,
   },
   dashEmpty: {
-    backgroundColor: '#E3E4E6',
+    backgroundColor: Colors.lightGrey,
   },
 });

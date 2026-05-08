@@ -46,7 +46,10 @@ function RootLayoutNav() {
         <Stack.Screen name="(tabs)"     options={{ headerShown: false }} />
         <Stack.Screen name="venue/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="journal"    options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="event-detail" options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="modal"      options={{ presentation: 'modal' }} />
+        <Stack.Screen name="chat"             options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="user-profile/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
     </ThemeProvider>
   );

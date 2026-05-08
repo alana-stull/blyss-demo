@@ -2,10 +2,11 @@ import { Tabs } from 'expo-router';
 import { useRef } from 'react';
 import { Pressable, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Globe, Users, Plus, Bell, User } from 'lucide-react-native';
+import { Globe, Users, CalendarPlus, Bell, User } from 'lucide-react-native';
+import { Colors } from '@/constants/Colors';
 
-const ACTIVE   = '#375169';
-const INACTIVE = '#B0B8C1';
+const ACTIVE   = '#4A7FA5';
+const INACTIVE = Colors.navInactive;
 
 function TabIcon({
   icon: Icon,
@@ -32,8 +33,8 @@ function FloatingPlanButton({ onPress }: { onPress?: (e: any) => void }) {
   return (
     <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} style={t.floatOuter}>
       {({ pressed }) => (
-        <Animated.View style={[t.floatBtn, pressed && { backgroundColor: '#2D4357' }, { transform: [{ scale }] }]}>
-          <Plus size={26} strokeWidth={2.5} color="#FFFFFF" />
+        <Animated.View style={[t.floatBtn, pressed && { backgroundColor: '#2A3F52' }, { transform: [{ scale }] }]}>
+          <CalendarPlus size={24} strokeWidth={2} color={Colors.white} />
         </Animated.View>
       )}
     </Pressable>
@@ -51,9 +52,9 @@ export default function TabLayout() {
         tabBarActiveTintColor: ACTIVE,
         tabBarInactiveTintColor: INACTIVE,
         tabBarStyle: {
-          backgroundColor: '#FFFFFF',
+          backgroundColor: Colors.white,
           borderTopWidth: 0.5,
-          borderTopColor: '#E5E7EB',
+          borderTopColor: Colors.divider,
           height: 52 + insets.bottom,
           paddingBottom: insets.bottom + 4,
           overflow: 'visible',
@@ -115,7 +116,7 @@ const t = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: ACTIVE,
+    backgroundColor: '#375169',
     alignItems: 'center',
     justifyContent: 'center',
     // iOS shadow

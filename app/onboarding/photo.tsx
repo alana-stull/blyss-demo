@@ -1,84 +1,87 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Text, Image } from 'react-native';
 import { router } from 'expo-router';
-import OnboardingHeader from '@/components/OnboardingHeader';
-import { saveDraft } from '@/lib/store';
+import { Camera } from 'lucide-react-native';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { useOnboarding } from '@/lib/OnboardingContext';
+import * as ImagePicker from 'expo-image-picker';
 
 export default function PhotoScreen() {
-  const [uploaded, setUploaded] = useState(false);
+  const { updateData } = useOnboarding();
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [skipped, setSkipped] = useState(false);
 
-  async function handleUpload() {
-    setUploaded(true);
-    await saveDraft({ photo_uploaded: true });
+  async function handlePickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setPhoto(result.assets[0].uri);
+      setSkipped(false);
+    }
   }
 
-  function next() {
-    router.push('/onboarding/calendar');
+  function handleContinue() {
+    updateData({ photo: photo || undefined });
+    router.push('/onboarding/interests');
   }
+
+  const isValid = photo !== null || skipped;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <OnboardingHeader step={4} />
-      <View style={s.content}>
-        <Text style={s.heading}>Add a photo</Text>
-        <Text style={s.sub}>
-          Plans get more RSVPs when{'\n'}hosts have a photo.
-        </Text>
+    <OnboardingLayout
+      progress={52}
+      question="Add a profile photo."
+      subtitle="Friends are 3x more likely to RSVP when they can see who's hosting."
+      continueDisabled={!isValid}
+      onContinue={handleContinue}
+    >
+      <View style={s.container}>
+        <Pressable style={s.photoCircle} onPress={handlePickImage}>
+          {photo ? (
+            <Image source={{ uri: photo }} style={s.photoImage} />
+          ) : (
+            <Camera size={40} color="#8B8F94" strokeWidth={1.5} />
+          )}
+        </Pressable>
 
-        <View style={s.avatarWrap}>
-          <View style={s.avatar}>
-            {uploaded
-              ? <Text style={s.check}>✓</Text>
-              : <Text style={s.person}>👤</Text>
-            }
-          </View>
-          {uploaded && <Text style={s.uploadedLabel}>Looking good!</Text>}
-        </View>
-
-        <TouchableOpacity
-          style={[s.uploadBtn, uploaded && s.uploadBtnDone]}
-          onPress={handleUpload}
-          disabled={uploaded}
-        >
-          <Text style={[s.uploadBtnText, uploaded && s.uploadBtnTextDone]}>
-            {uploaded ? '✓  Photo added' : 'Upload photo'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={s.footer}>
-        <TouchableOpacity style={s.btn} onPress={next}>
-          <Text style={s.btnText}>Continue</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.skip} onPress={next}>
+        <Pressable onPress={() => setSkipped(true)}>
           <Text style={s.skipText}>Skip for now</Text>
-        </TouchableOpacity>
+        </Pressable>
       </View>
-    </SafeAreaView>
+    </OnboardingLayout>
   );
 }
 
 const s = StyleSheet.create({
-  safe:             { flex: 1, backgroundColor: '#fff' },
-  content:          { flex: 1, padding: 24, paddingTop: 40, alignItems: 'center' },
-  heading:          { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:              { fontSize: 15, color: '#8B8F94', marginBottom: 44, textAlign: 'center', lineHeight: 22 },
-  avatarWrap:       { alignItems: 'center', marginBottom: 32 },
-  avatar:           { width: 120, height: 120, borderRadius: 60, backgroundColor: '#EBF5FB',
-                      borderWidth: 3, borderColor: '#B7D3E0', alignItems: 'center',
-                      justifyContent: 'center', marginBottom: 10 },
-  person:           { fontSize: 52 },
-  check:            { fontSize: 52, color: '#5BA8D3' },
-  uploadedLabel:    { fontSize: 14, color: '#5BA8D3', fontWeight: '600' },
-  uploadBtn:        { borderWidth: 1.5, borderColor: '#5BA8D3', borderRadius: 14,
-                      paddingVertical: 14, paddingHorizontal: 36 },
-  uploadBtnDone:    { backgroundColor: '#EBF5FB', borderColor: '#B7D3E0' },
-  uploadBtnText:    { color: '#5BA8D3', fontSize: 15, fontWeight: '600' },
-  uploadBtnTextDone:{ color: '#375169' },
-  footer:           { padding: 24, paddingTop: 0, gap: 10 },
-  btn:              { backgroundColor: '#5BA8D3', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  btnText:          { color: '#fff', fontSize: 16, fontWeight: '700' },
-  skip:             { alignItems: 'center', paddingVertical: 8 },
-  skipText:         { color: '#B0B4BA', fontSize: 14 },
+  container: {
+    marginTop: 32,
+    alignItems: 'center',
+    gap: 24,
+  },
+  photoCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#E8F2F8',
+    borderWidth: 2,
+    borderStyle: 'dashed',
+    borderColor: '#B7D3E0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 60,
+  },
+  skipText: {
+    fontSize: 14,
+    color: '#8B8F94',
+    fontWeight: '500',
+  },
 });

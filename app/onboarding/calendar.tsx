@@ -1,115 +1,111 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
-import OnboardingHeader from '@/components/OnboardingHeader';
-import { saveDraft } from '@/lib/store';
-
-type State = 'idle' | 'connecting' | 'connected';
+import { Calendar } from 'lucide-react-native';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { useOnboarding } from '@/lib/OnboardingContext';
 
 export default function CalendarScreen() {
-  const [google, setGoogle] = useState<State>('idle');
-  const [apple, setApple]   = useState<State>('idle');
+  const { updateData } = useOnboarding();
+  const [connected, setConnected] = useState<string[]>([]);
 
-  function connect(which: 'google' | 'apple') {
-    const set = which === 'google' ? setGoogle : setApple;
-    set('connecting');
-    setTimeout(() => set('connected'), 1200);
+  function toggleCalendar(cal: string) {
+    if (connected.includes(cal)) {
+      setConnected(connected.filter(c => c !== cal));
+    } else {
+      setConnected([...connected, cal]);
+    }
   }
 
-  async function handleContinue() {
-    const connected: string[] = [];
-    if (google === 'connected') connected.push('google');
-    if (apple  === 'connected') connected.push('apple');
-    await saveDraft({ calendar_connected: connected });
-    router.push('/onboarding/interests');
+  function handleContinue() {
+    updateData({ calendarConnected: connected });
+    router.push('/onboarding/friends');
   }
 
-  function skip() {
-    router.push('/onboarding/interests');
+  function handleSkip() {
+    router.push('/onboarding/friends');
   }
 
-  function label(st: State, name: string) {
-    if (st === 'connecting') return 'Connecting…';
-    if (st === 'connected')  return `Connected ✓`;
-    return `Connect ${name}`;
-  }
+  const hasConnected = connected.length > 0;
 
   return (
-    <SafeAreaView style={s.safe}>
-      <OnboardingHeader step={5} />
-      <View style={s.content}>
-        <Text style={s.heading}>Connect your calendar</Text>
-        <Text style={s.sub}>
-          So Blyss only shows you plans{'\n'}when you're actually free.
-        </Text>
-
-        <View style={s.cards}>
-          {/* Google */}
-          <TouchableOpacity
-            style={[s.card, google === 'connected' && s.cardOn]}
-            onPress={() => google === 'idle' && connect('google')}
-            disabled={google !== 'idle'}
-          >
-            <Text style={s.icon}>📅</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.cardTitle, google === 'connected' && s.cardTitleOn]}>
-                {label(google, 'Google Calendar')}
+    <OnboardingLayout
+      progress={80}
+      question="Sync your calendar."
+      subtitle="See when friends are free and plan around your existing schedule."
+      continueDisabled={!hasConnected}
+      onContinue={hasConnected ? handleContinue : undefined}
+    >
+      <View style={s.container}>
+        {['Connect Google Calendar', 'Connect Apple Calendar'].map((cal, idx) => {
+          const isConnected = connected.includes(cal);
+          return (
+            <Pressable
+              key={idx}
+              style={[
+                s.button,
+                isConnected && s.buttonConnected,
+              ]}
+              onPress={() => toggleCalendar(cal)}
+            >
+              <Calendar size={20} color={isConnected ? '#4A7FA5' : '#8B8F94'} strokeWidth={1.5} />
+              <Text
+                style={[
+                  s.buttonText,
+                  isConnected && s.buttonTextConnected,
+                ]}
+              >
+                {isConnected ? `${cal.replace('Connect ', '')} Connected ✓` : cal}
               </Text>
-              {google === 'idle' && (
-                <Text style={s.cardSub}>Google Calendar</Text>
-              )}
-            </View>
-          </TouchableOpacity>
+            </Pressable>
+          );
+        })}
 
-          {/* Apple */}
-          <TouchableOpacity
-            style={[s.card, apple === 'connected' && s.cardOn]}
-            onPress={() => apple === 'idle' && connect('apple')}
-            disabled={apple !== 'idle'}
-          >
-            <Text style={s.icon}>🍎</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={[s.cardTitle, apple === 'connected' && s.cardTitleOn]}>
-                {label(apple, 'Apple Calendar')}
-              </Text>
-              {apple === 'idle' && (
-                <Text style={s.cardSub}>Apple Calendar</Text>
-              )}
-            </View>
-          </TouchableOpacity>
-        </View>
+        {!hasConnected && (
+          <Pressable style={s.skipLink} onPress={handleSkip}>
+            <Text style={s.skipText}>Skip for now</Text>
+          </Pressable>
+        )}
       </View>
-
-      <View style={s.footer}>
-        <TouchableOpacity style={s.btn} onPress={handleContinue}>
-          <Text style={s.btnText}>Continue</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={s.skip} onPress={skip}>
-          <Text style={s.skipText}>Skip for now</Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+    </OnboardingLayout>
   );
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: '#fff' },
-  content:    { flex: 1, padding: 24, paddingTop: 40 },
-  heading:    { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:        { fontSize: 15, color: '#8B8F94', marginBottom: 36, lineHeight: 22 },
-  cards:      { gap: 14 },
-  card:       { flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1.5,
-                borderColor: '#E3E4E6', borderRadius: 14, paddingVertical: 18,
-                paddingHorizontal: 20, backgroundColor: '#fff' },
-  cardOn:     { borderColor: '#5BA8D3', backgroundColor: '#EBF5FB' },
-  icon:       { fontSize: 26 },
-  cardTitle:  { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  cardTitleOn:{ color: '#375169' },
-  cardSub:    { fontSize: 12, color: '#B0B4BA', marginTop: 2 },
-  footer:     { padding: 24, gap: 10 },
-  btn:        { backgroundColor: '#5BA8D3', borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
-  btnText:    { color: '#fff', fontSize: 16, fontWeight: '700' },
-  skip:       { alignItems: 'center', paddingVertical: 8 },
-  skipText:   { color: '#B0B4BA', fontSize: 14 },
+  container: {
+    gap: 12,
+    marginTop: 8,
+  },
+  button: {
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#E3E4E6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'white',
+  },
+  buttonConnected: {
+    backgroundColor: '#E8F2F8',
+    borderColor: '#4A7FA5',
+  },
+  buttonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333333',
+  },
+  buttonTextConnected: {
+    color: '#4A7FA5',
+  },
+  skipLink: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  skipText: {
+    fontSize: 14,
+    color: '#8B8F94',
+    fontWeight: '500',
+  },
 });

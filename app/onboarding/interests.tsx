@@ -1,80 +1,107 @@
-import { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
-import OnboardingHeader from '@/components/OnboardingHeader';
-import { saveDraft } from '@/lib/store';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { useOnboarding } from '@/lib/OnboardingContext';
+import { Wine, Coffee, UtensilsCrossed, Music, Dumbbell, Trees, Palette, Zap, Moon, Trophy } from 'lucide-react-native';
 
-const ITEMS = [
-  'Food & Drink', 'Music', 'Arts & Culture', 'Outdoors',
-  'Wellness', 'Sports', 'Nightlife', 'Learning',
+const INTERESTS = [
+  { label: 'Bars', icon: Wine },
+  { label: 'Coffee', icon: Coffee },
+  { label: 'Brunch', icon: UtensilsCrossed },
+  { label: 'Concerts', icon: Music },
+  { label: 'Fitness', icon: Dumbbell },
+  { label: 'Outdoors', icon: Trees },
+  { label: 'Art', icon: Palette },
+  { label: 'Activities', icon: Zap },
+  { label: 'Nightlife', icon: Moon },
+  { label: 'Sports', icon: Trophy },
 ];
 
 export default function InterestsScreen() {
+  const { updateData } = useOnboarding();
   const [selected, setSelected] = useState<string[]>([]);
 
-  function toggle(item: string) {
-    setSelected(prev =>
-      prev.includes(item) ? prev.filter(i => i !== item) : [...prev, item]
-    );
+  function toggleInterest(interest: string) {
+    if (selected.includes(interest)) {
+      setSelected(selected.filter(i => i !== interest));
+    } else {
+      setSelected([...selected, interest]);
+    }
   }
 
-  async function handleContinue() {
-    await saveDraft({ interests: selected });
-    router.push('/onboarding/experiences');
+  function handleContinue() {
+    updateData({ interests: selected });
+    router.push('/onboarding/vibe');
   }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <OnboardingHeader step={6} />
-      <ScrollView contentContainerStyle={s.content}>
-        <Text style={s.heading}>What are you into?</Text>
-        <Text style={s.sub}>
-          Select everything that fits. We'll find the right spots.
-        </Text>
-        <View style={s.list}>
-          {ITEMS.map(item => {
-            const on = selected.includes(item);
-            return (
-              <TouchableOpacity
-                key={item}
-                style={[s.option, on && s.optionOn]}
-                onPress={() => toggle(item)}
-                activeOpacity={0.7}
+    <OnboardingLayout
+      progress={60}
+      question="What are you into?"
+      subtitle="Pick as many as you like."
+      continueDisabled={selected.length === 0}
+      onContinue={handleContinue}
+    >
+      <View style={s.grid}>
+        {INTERESTS.map((item, idx) => {
+          const isSelected = selected.includes(item.label);
+          return (
+            <Pressable
+              key={idx}
+              style={[
+                s.chip,
+                isSelected && s.chipActive,
+              ]}
+              onPress={() => toggleInterest(item.label)}
+            >
+              <item.icon size={16} color={isSelected ? '#375169' : '#333333'} strokeWidth={1.5} />
+              <Text
+                style={[
+                  s.chipText,
+                  isSelected && s.chipTextActive,
+                ]}
               >
-                <Text style={[s.optionText, on && s.optionTextOn]}>{item}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      </ScrollView>
-
-      <View style={s.footer}>
-        <TouchableOpacity
-          style={[s.btn, selected.length > 0 ? s.btnActive : s.btnInactive]}
-          onPress={handleContinue}
-        >
-          <Text style={s.btnText}>Continue</Text>
-        </TouchableOpacity>
+                {item.label}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
-    </SafeAreaView>
+    </OnboardingLayout>
   );
 }
 
 const s = StyleSheet.create({
-  safe:        { flex: 1, backgroundColor: '#fff' },
-  content:     { padding: 24, paddingBottom: 8 },
-  heading:     { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:         { fontSize: 15, color: '#8B8F94', marginBottom: 28 },
-  list:        { gap: 12 },
-  option:      { borderWidth: 1.5, borderColor: '#E3E4E6', borderRadius: 14,
-                 paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#fff' },
-  optionOn:    { borderColor: '#5BA8D3', backgroundColor: '#EBF5FB' },
-  optionText:  { fontSize: 16, fontWeight: '500', color: '#1A1A2E' },
-  optionTextOn:{ color: '#375169', fontWeight: '600' },
-  footer:      { padding: 24, paddingTop: 8 },
-  btn:         { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  btnActive:   { backgroundColor: '#375169' },
-  btnInactive: { backgroundColor: '#A8D4EC' },
-  btnText:     { color: '#fff', fontSize: 16, fontWeight: '700' },
+  grid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'flex-start',
+    marginTop: 8,
+  },
+  chip: {
+    height: 52,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E3E4E6',
+    width: '48%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: 'white',
+  },
+  chipActive: {
+    backgroundColor: '#E8F2F8',
+    borderColor: '#4A7FA5',
+  },
+  chipText: {
+    fontSize: 13,
+    color: '#333333',
+    fontWeight: '500',
+  },
+  chipTextActive: {
+    color: '#375169',
+  },
 });

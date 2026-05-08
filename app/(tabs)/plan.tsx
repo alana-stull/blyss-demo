@@ -7,12 +7,13 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScaleBtn } from '@/components/ScaleBtn';
+import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
 import type { Venue } from '@/lib/venues';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#5BA8D3';
+const ACCENT = Colors.primaryBlue;
 const TOTAL_STEPS = 8;
 
 const CATEGORIES = [
@@ -57,7 +58,7 @@ function StepHeader({ step, total, onBack }: { step: number; total: number; onBa
     <View style={s.headerWrap}>
       <View style={s.headerRow}>
         <Pressable style={s.backBtn} onPress={onBack}>
-          <Ionicons name="arrow-back" size={20} color="#1A1A2E" />
+          <Ionicons name="arrow-back" size={20} color={Colors.black} />
         </Pressable>
         <Text style={s.headerTitle}>Plan Event</Text>
         <View style={{ width: 32 }} />
@@ -165,7 +166,7 @@ export default function PlanScreen() {
             <View style={s.venueInfo}>
               <Text style={s.venueName}>{v.name}</Text>
               <View style={s.venueMetaRow}>
-                <Ionicons name="location-outline" size={12} color="#8B8F94" />
+                <Ionicons name="location-outline" size={12} color={Colors.naturalGrey} />
                 <Text style={s.venueMeta}>{v.neighborhood} · {(Math.random() * 2 + 0.5).toFixed(1)} mi</Text>
               </View>
             </View>
@@ -221,7 +222,7 @@ export default function PlanScreen() {
                 <Text style={s.friendName}>{f.name}</Text>
                 {sel && (
                   <View style={s.checkCircle}>
-                    <Ionicons name="checkmark" size={14} color="#fff" />
+                    <Ionicons name="checkmark" size={14} color={Colors.white} />
                   </View>
                 )}
               </Pressable>
@@ -256,11 +257,11 @@ export default function PlanScreen() {
               </View>
             )}
             <View style={s.timeMeta}>
-              <Ionicons name="time-outline" size={14} color="#8B8F94" />
+              <Ionicons name="time-outline" size={14} color={Colors.naturalGrey} />
               <Text style={s.timeLabel}>{slot.label}</Text>
             </View>
             <View style={s.timeMeta}>
-              <Ionicons name="people-outline" size={14} color="#8B8F94" />
+              <Ionicons name="people-outline" size={14} color={Colors.naturalGrey} />
               <Text style={s.timeAvail}>
                 {slot.optimal ? '100% (Everyone is free!)' : `${slot.pct}% (${slot.desc})`}
               </Text>
@@ -346,7 +347,7 @@ export default function PlanScreen() {
   const renderConfirmation = () => (
     <View style={s.confirmWrap}>
       <View style={s.confirmIcon}>
-        <Ionicons name="checkmark" size={36} color="#fff" />
+        <Ionicons name="checkmark" size={36} color={Colors.white} />
       </View>
       <Text style={s.confirmTitle}>Event Created!</Text>
       <Text style={s.confirmSub}>
@@ -414,10 +415,10 @@ export default function PlanScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F7F8FA' },
+  safe: { flex: 1, backgroundColor: Colors.screenBackground },
 
   // Header
-  headerWrap: { backgroundColor: '#fff', paddingBottom: 0 },
+  headerWrap: { backgroundColor: Colors.screenBackground, paddingBottom: 0 },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -427,10 +428,10 @@ const s = StyleSheet.create({
     paddingBottom: 12,
   },
   backBtn: { width: 32, height: 32, justifyContent: 'center' },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: '#1A1A2E' },
+  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.black },
   progressTrack: {
     height: 3,
-    backgroundColor: '#E3E4E6',
+    backgroundColor: Colors.lightGrey,
     marginHorizontal: 0,
   },
   progressFill: {
@@ -441,8 +442,8 @@ const s = StyleSheet.create({
 
   // Content
   content: { padding: 20, paddingBottom: 32, gap: 0 },
-  stepTitle: { fontSize: 20, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.4, marginBottom: 4, marginTop: 8 },
-  stepSub: { fontSize: 14, color: '#8B8F94', marginBottom: 20 },
+  stepTitle: { fontSize: 20, fontWeight: '700', color: Colors.black, letterSpacing: -0.4, marginBottom: 4, marginTop: 8 },
+  stepSub: { fontSize: 14, color: Colors.naturalGrey, marginBottom: 20 },
   listGap: { gap: 10 },
 
   // Category grid
@@ -454,10 +455,10 @@ const s = StyleSheet.create({
   categoryCard: {
     width: '47%',
     aspectRatio: 1.2,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     alignItems: 'flex-start',
     justifyContent: 'flex-end',
     padding: 14,
@@ -472,39 +473,39 @@ const s = StyleSheet.create({
     backgroundColor: '#EBF5FB',
   },
   categoryEmoji: { fontSize: 28, marginBottom: 8 },
-  categoryLabel: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
+  categoryLabel: { fontSize: 15, fontWeight: '600', color: Colors.black },
 
   // Venue row
   venueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     overflow: 'hidden',
     gap: 0,
   },
-  venueThumb: { width: 72, height: 72, backgroundColor: '#E3E4E6' },
+  venueThumb: { width: 72, height: 72, backgroundColor: Colors.lightGrey },
   venueInfo: { flex: 1, paddingHorizontal: 14, gap: 4 },
-  venueName: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
+  venueName: { fontSize: 15, fontWeight: '600', color: Colors.black },
   venueMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  venueMeta: { fontSize: 12, color: '#8B8F94' },
+  venueMeta: { fontSize: 12, color: Colors.naturalGrey },
 
   // Option row (privacy, payment)
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     padding: 16,
   },
   optionRowSelected: { borderColor: ACCENT, backgroundColor: '#F0F8FD' },
-  optionLabel: { fontSize: 15, fontWeight: '600', color: '#1A1A2E', marginBottom: 2 },
-  optionSub: { fontSize: 13, color: '#8B8F94' },
+  optionLabel: { fontSize: 15, fontWeight: '600', color: Colors.black, marginBottom: 2 },
+  optionSub: { fontSize: 13, color: Colors.naturalGrey },
 
   // Privacy icon
   privacyIcon: {
@@ -521,15 +522,15 @@ const s = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     padding: 12,
   },
   friendAvatar: { width: 44, height: 44, borderRadius: 22, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
-  friendInitials: { fontSize: 14, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
-  friendName: { flex: 1, fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
+  friendInitials: { fontSize: 14, fontWeight: '700', color: Colors.white, letterSpacing: 0.5 },
+  friendName: { flex: 1, fontSize: 15, fontWeight: '600', color: Colors.black },
   checkCircle: {
     width: 26,
     height: 26,
@@ -541,10 +542,10 @@ const s = StyleSheet.create({
 
   // Time slots
   timeCard: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     padding: 14,
     gap: 6,
   },
@@ -553,21 +554,21 @@ const s = StyleSheet.create({
   optimalDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: ACCENT },
   optimalText: { fontSize: 12, fontWeight: '700', color: ACCENT },
   timeMeta: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  timeLabel: { fontSize: 15, fontWeight: '600', color: '#1A1A2E' },
-  timeAvail: { fontSize: 13, color: '#8B8F94' },
+  timeLabel: { fontSize: 15, fontWeight: '600', color: Colors.black },
+  timeAvail: { fontSize: 13, color: Colors.naturalGrey },
 
   // Event details
   fieldGroup: { marginBottom: 18 },
-  fieldLabel: { fontSize: 14, fontWeight: '600', color: '#1A1A2E', marginBottom: 8 },
+  fieldLabel: { fontSize: 14, fontWeight: '600', color: Colors.black, marginBottom: 8 },
   textInput: {
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderWidth: 1.5,
-    borderColor: '#E3E4E6',
+    borderColor: Colors.lightGrey,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 14,
-    color: '#1A1A2E',
+    color: Colors.black,
   },
   textArea: { height: 100, paddingTop: 12 },
 
@@ -575,7 +576,7 @@ const s = StyleSheet.create({
   stickyBottom: {
     padding: 16,
     paddingBottom: 24,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.screenBackground,
   },
   continueBtn: {
     backgroundColor: ACCENT,
@@ -583,8 +584,8 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  continueBtnDisabled: { backgroundColor: '#B7D3E0' },
-  continueBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  continueBtnDisabled: { backgroundColor: Colors.secondaryBlue },
+  continueBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
 
   // Confirmation
   confirmWrap: {
@@ -593,7 +594,7 @@ const s = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 28,
     gap: 16,
-    backgroundColor: '#F7F8FA',
+    backgroundColor: Colors.screenBackground,
   },
   confirmIcon: {
     width: 72,
@@ -612,18 +613,18 @@ const s = StyleSheet.create({
   confirmTitle: {
     fontSize: 26,
     fontWeight: '800',
-    color: '#1A1A2E',
+    color: Colors.black,
     letterSpacing: -0.5,
   },
   confirmSub: {
     fontSize: 15,
-    color: '#8B8F94',
+    color: Colors.naturalGrey,
     textAlign: 'center',
     lineHeight: 22,
   },
   confirmCard: {
     width: '100%',
-    backgroundColor: '#fff',
+    backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     gap: 12,
@@ -642,7 +643,7 @@ const s = StyleSheet.create({
   confirmRowText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#1A1A2E',
+    color: Colors.black,
     flex: 1,
   },
   confirmBtn: {
@@ -653,5 +654,5 @@ const s = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
   },
-  confirmBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  confirmBtnText: { fontSize: 16, fontWeight: '700', color: Colors.white },
 });

@@ -1,12 +1,21 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Image, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
-import Ionicons from '@expo/vector-icons/Ionicons';
-import { loadProfile, MOCK_FRIENDS, MOCK_JOURNAL, MOCK_EVENTS } from '@/lib/store';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Pencil, Settings, Bookmark, MapPin, Clock } from 'lucide-react-native';
+import { loadProfile } from '@/lib/store';
+import { ScaleBtn } from '@/components/ScaleBtn';
+import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
+import { EVENTS, getAcceptedEventIds } from '@/lib/events';
 import type { UserProfile } from '@/lib/store';
+
+type SavedVenue = {
+  id: string; name: string; category: string; location: string;
+  imageUrl: string; priceRange: string; tags: string[];
+};
 
 type Tab = 'events' | 'posts' | 'saved';
 
@@ -19,55 +28,96 @@ const EVENT_TEMPLATES = [
   { suffix: 'Happy Hour',       dateLabel: 'Thu, Feb 13 · 6:00 PM', attending: ['Maya', 'Jordan'] },
 ];
 
-const AVATAR_COLORS = ['#B7D3E0', '#D4C5E2', '#C5DEC5', '#E2D4C5'];
-const FRIEND_IMAGES = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&q=80',
-  'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&q=80',
-  'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=100&q=80',
+const ATTENDEE_COLORS = [
+  { bg: '#9FE1CB', fg: '#085041' },
+  { bg: '#F5C4B3', fg: '#712B13' },
+  { bg: '#C5D4E0', fg: '#2C4A5E' },
+  { bg: '#D4C5E2', fg: '#4A2C6E' },
 ];
 
+function parseEventDate(dateLabel: string) {
+  const [left, time] = dateLabel.split(' · ');
+  const [dowPart, rest] = left.split(', ');
+  const [month, day] = rest.split(' ');
+  return { month, day, dow: dowPart, time: time ?? '' };
+}
+
 function buildProfileEvents() {
-  return VENUES.slice(0, 4).map((v, i) => {
-    const tpl = EVENT_TEMPLATES[i % EVENT_TEMPLATES.length];
-    return {
-      id: `pe-${v.venue_id}`,
-      title: tpl.suffix === 'Sunday Brunch Club' ? 'Sunday Brunch Club' : `${v.name} ${tpl.suffix}`,
-      venueName: v.name,
-      venueId: v.venue_id,
-      image: v.image,
-      dateLabel: tpl.dateLabel,
-      attending: tpl.attending,
-    };
-  });
+  return getAcceptedEventIds()
+    .map(id => EVENTS[id])
+    .filter(Boolean)
+    .map(evt => ({
+      id: evt.id,
+      title: evt.title,
+      venueName: evt.venue,
+      venueId: evt.venueId,
+      dateLabel: evt.dateLabel,
+      parsed: parseEventDate(evt.dateLabel),
+      attending: evt.attending,
+    }));
+}
+
+// ─── Saved venue row ──────────────────────────────────────────────────────────
+
+function SavedVenueRow({ item }: { item: SavedVenue }) {
+  return (
+    <Pressable
+      style={({ pressed }) => [s.savedCard, pressed && { opacity: 0.92 }]}
+      onPress={() => router.push(`/venue/${item.id}`)}
+    >
+      <View style={{ flex: 1, gap: 5 }}>
+        <Text style={s.savedName} numberOfLines={1}>{item.name}</Text>
+        <Text style={s.savedMeta} numberOfLines={1}>{item.location} · {item.priceRange}</Text>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginTop: 8 }}>
+          {item.tags.slice(0, 3).map(t => (
+            <View key={t} style={s.savedTag}>
+              <Text style={s.savedTagText}>{t}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+      <ScaleBtn
+        style={s.planBtn}
+        onPress={() => router.push({ pathname: '/(tabs)/plan', params: { venueId: item.id } })}
+      >
+        <Text style={s.planBtnText}>Plan</Text>
+      </ScaleBtn>
+    </Pressable>
+  );
 }
 
 // ─── Event card ───────────────────────────────────────────────────────────────
 
 function EventCard({ item }: { item: ReturnType<typeof buildProfileEvents>[0] }) {
-  const isSolo = item.attending.length === 1;
-
+  const { month, day, dow, time } = item.parsed;
   return (
-    <Pressable style={({ pressed }) => [s.card, pressed && { opacity: 0.92 }]} onPress={() => router.push(`/venue/${item.venueId}`)}>
-      <Image source={{ uri: item.image }} style={s.thumb} />
-      <View style={s.cardBody}>
-        <Text style={s.cardTitle} numberOfLines={1}>{item.title}</Text>
-        <View style={s.venueRow}>
-          <Ionicons name="location-outline" size={13} color="#5BA8D3" />
-          <Text style={s.venueName} numberOfLines={1}>{item.venueName}</Text>
+    <Pressable style={({ pressed }) => [s.eventCard, pressed && { opacity: 0.92 }]} onPress={() => router.push(`/venue/${item.venueId}`)}>
+      <View style={s.dateBlock}>
+        <Text style={s.dateMonth}>{month.toUpperCase()}</Text>
+        <Text style={s.dateDay}>{day}</Text>
+        <Text style={s.dateDow}>{dow.toUpperCase()}</Text>
+      </View>
+      <View style={s.divider} />
+      <View style={{ flex: 1, gap: 5 }}>
+        <Text style={s.eventTitle} numberOfLines={1}>{item.title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <MapPin size={11} strokeWidth={2} color="#8B8F94" />
+          <Text style={s.eventMeta} numberOfLines={1}>{item.venueName}</Text>
+          <Text style={s.eventMeta}> · </Text>
+          <Clock size={11} strokeWidth={2} color="#8B8F94" />
+          <Text style={s.eventMeta}>{time}</Text>
         </View>
-        <Text style={s.dateText}>{item.dateLabel}</Text>
-        <View style={s.attendeeRow}>
-          {item.attending.slice(0, 3).map((_, i) => (
-            <Image
-              key={i}
-              source={{ uri: FRIEND_IMAGES[i % FRIEND_IMAGES.length] }}
-              style={[s.attendeeAvatar, { marginLeft: i > 0 ? -8 : 0, zIndex: 3 - i }]}
-            />
-          ))}
-          <Text style={s.attendeeText}>
-            {isSolo
-              ? `${item.attending[0]}'s event`
-              : `${item.attending.length} attending`}
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
+          {item.attending.slice(0, 3).map((name, i) => {
+            const col = ATTENDEE_COLORS[i % ATTENDEE_COLORS.length];
+            return (
+              <View key={i} style={[s.attendeeCircle, { backgroundColor: col.bg, marginLeft: i > 0 ? -5 : 0, zIndex: 5 - i }]}>
+                <Text style={[s.attendeeInitial, { color: col.fg }]}>{name[0]}</Text>
+              </View>
+            );
+          })}
+          <Text style={[s.eventMeta, { marginLeft: 6 }]}>
+            {item.attending.length === 1 ? `${item.attending[0]}'s event` : `${item.attending.length} going`}
           </Text>
         </View>
       </View>
@@ -78,80 +128,82 @@ function EventCard({ item }: { item: ReturnType<typeof buildProfileEvents>[0] })
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function ProfileScreen() {
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [tab, setTab] = useState<Tab>('events');
+  const [profile,      setProfile]      = useState<UserProfile | null>(null);
+  const [tab,          setTab]          = useState<Tab>('events');
+  const [savedVenues,  setSavedVenues]  = useState<SavedVenue[]>([]);
 
   useFocusEffect(
-    useCallback(() => { loadProfile().then(setProfile); }, [])
+    useCallback(() => {
+      loadProfile().then(setProfile);
+      AsyncStorage.getItem('blyss_saved_venues').then(raw => {
+        setSavedVenues(raw ? JSON.parse(raw) : []);
+      });
+    }, [])
   );
 
   const firstName = profile?.first_name ?? 'Alana';
   const lastName  = profile?.last_name  ?? 'Stull';
   const city      = profile?.city       ?? 'Durham';
-  const handle    = profile?.handle     ?? `${firstName.toLowerCase()}.cassidy`;
   const initials  = `${firstName[0] ?? 'A'}${lastName[0] ?? 'S'}`.toUpperCase();
 
   const profileEvents = buildProfileEvents();
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
+      <View style={s.header}>
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]} onPress={() => router.push('/onboarding/interests')}>
+          <Pencil size={17} strokeWidth={2} color={Colors.black} />
+        </Pressable>
+        <View style={{ flex: 1 }} />
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
+          <Settings size={20} strokeWidth={1.5} color={Colors.black} />
+        </Pressable>
+      </View>
+
+      {/* ── Avatar + identity (static) ── */}
+      <View style={s.heroSection}>
+        <View style={s.avatarWrap}>
+          <View style={s.avatar}>
+            <Text style={s.initials}>{initials}</Text>
+          </View>
+        </View>
+
+        <Text style={s.displayName}>{firstName} {lastName}</Text>
+        <Text style={s.subLine}>{city}</Text>
+
+        <View style={s.statsRow}>
+          <View style={s.stat}>
+            <Text style={s.statNum}>142</Text>
+            <Text style={s.statLabel}>Friends</Text>
+          </View>
+          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push('/journal')}>
+            <Text style={s.statNum}>24</Text>
+            <Text style={s.statLabel}>Planned</Text>
+          </Pressable>
+          <View style={s.stat}>
+            <Text style={s.statNum}>87</Text>
+            <Text style={s.statLabel}>Attended</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* ── Tabs (static) ── */}
+      <View style={s.tabBar}>
+        {(['events', 'posts', 'saved'] as Tab[]).map(t => (
+          <Pressable
+            key={t}
+            style={({ pressed }) => [s.tabBtn, tab === t && s.tabBtnActive, pressed && { opacity: 0.7 }]}
+            onPress={() => setTab(t)}
+          >
+            <Text style={[s.tabLabel, tab === t && s.tabLabelActive]}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {/* ── Tab content (scrollable) ── */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
-
-        {/* ── Avatar + identity ── */}
-        <View style={s.heroSection}>
-          <View style={s.avatarWrap}>
-            <View style={s.avatar}>
-              <Text style={s.initials}>{initials}</Text>
-            </View>
-          </View>
-
-          <Text style={s.displayName}>{firstName} {lastName}</Text>
-          <Text style={s.subLine}>@{handle} · {city}</Text>
-
-          {/* Stats */}
-          <View style={s.statsRow}>
-            <View style={s.stat}>
-              <Text style={s.statNum}>142</Text>
-              <Text style={s.statLabel}>Friends</Text>
-            </View>
-            <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push('/journal')}>
-              <Text style={s.statNum}>24</Text>
-              <Text style={s.statLabel}>Planned</Text>
-            </Pressable>
-            <View style={s.stat}>
-              <Text style={s.statNum}>87</Text>
-              <Text style={s.statLabel}>Attended</Text>
-            </View>
-          </View>
-
-          {/* Actions */}
-          <View style={s.actionsRow}>
-            <Pressable style={({ pressed }) => pressed ? { opacity: 0.7 } : {}} onPress={() => router.push('/onboarding/interests')}>
-              <Text style={s.actionLink}>Edit Profile</Text>
-            </Pressable>
-            <Text style={s.actionDot}>·</Text>
-            <Pressable style={({ pressed }) => pressed ? { opacity: 0.7 } : {}}>
-              <Text style={s.actionLink}>Settings</Text>
-            </Pressable>
-          </View>
-        </View>
-
-        {/* ── Tabs ── */}
-        <View style={s.tabBar}>
-          {(['events', 'posts', 'saved'] as Tab[]).map(t => (
-            <Pressable
-              key={t}
-              style={({ pressed }) => [s.tabBtn, tab === t && s.tabBtnActive, pressed && { opacity: 0.7 }]}
-              onPress={() => setTab(t)}
-            >
-              <Text style={[s.tabLabel, tab === t && s.tabLabelActive]}>
-                {t.charAt(0).toUpperCase() + t.slice(1)}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {/* ── Tab content ── */}
         <View style={s.feedSection}>
           {tab === 'events' && profileEvents.map(item => (
             <EventCard key={item.id} item={item} />
@@ -164,176 +216,110 @@ export default function ProfileScreen() {
           )}
 
           {tab === 'saved' && (
-            <View style={s.empty}>
-              <Text style={s.emptyText}>No saved places yet</Text>
-            </View>
+            savedVenues.length === 0 ? (
+              <View style={s.empty}>
+                <Bookmark size={48} strokeWidth={1.5} color="#E3E4E6" />
+                <Text style={s.emptyText}>No saved venues yet</Text>
+                <Text style={[s.emptyText, { fontSize: 13, marginTop: 4 }]}>Tap the bookmark on any venue to save it</Text>
+              </View>
+            ) : (
+              savedVenues.map(item => <SavedVenueRow key={item.id} item={item} />)
+            )
           )}
         </View>
-
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
-  safe:   { flex: 1, backgroundColor: '#F7F8FA' },
-  scroll: { paddingBottom: 40 },
+  safe:      { flex: 1, backgroundColor: Colors.screenBackground },
+  scroll:    { paddingBottom: 40 },
+  header:    { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12, backgroundColor: Colors.screenBackground },
+  headerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
 
   // Hero
   heroSection: {
     alignItems: 'center',
-    paddingTop: 28,
-    paddingBottom: 24,
+    paddingTop: 16,
+    paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
+    backgroundColor: Colors.screenBackground,
   },
-  avatarWrap: {
-    marginBottom: 14,
-  },
+  avatarWrap: { marginBottom: 14 },
   avatar: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: '#EBF5FB',
-    borderWidth: 3,
-    borderColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.10,
-    shadowRadius: 8,
-    elevation: 4,
+    width: 86, height: 86, borderRadius: 43,
+    backgroundColor: '#EBF5FB', borderWidth: 3, borderColor: Colors.white,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.10, shadowRadius: 8, elevation: 4,
   },
-  initials: { fontSize: 30, fontWeight: '800', color: '#375169' },
-
-  displayName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1A1A2E',
-    letterSpacing: -0.4,
-    marginBottom: 4,
-  },
-  subLine: {
-    fontSize: 14,
-    color: '#8B8F94',
-    marginBottom: 20,
-  },
+  initials:    { fontSize: 24, fontWeight: '800', color: Colors.deepSlate },
+  displayName: { fontSize: 17, fontWeight: '700', color: Colors.black, letterSpacing: -0.3, marginBottom: 6 },
+  subLine:     { fontSize: 13, color: Colors.naturalGrey, marginBottom: 20 },
 
   // Stats
-  statsRow: {
-    flexDirection: 'row',
-    gap: 36,
-    marginBottom: 18,
-  },
-  stat: { alignItems: 'center', gap: 2 },
-  statNum: { fontSize: 20, fontWeight: '800', color: '#1A1A2E', letterSpacing: -0.5 },
-  statLabel: { fontSize: 12, color: '#8B8F94', fontWeight: '500' },
-
-  // Actions
-  actionsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionLink: { fontSize: 14, color: '#5BA8D3', fontWeight: '600' },
-  actionDot:  { fontSize: 14, color: '#B0B4BA' },
+  statsRow:  { flexDirection: 'row', gap: 28, marginBottom: 0 },
+  stat:      { alignItems: 'center', gap: 1 },
+  statNum:   { fontSize: 17, fontWeight: '800', color: Colors.black, letterSpacing: -0.4 },
+  statLabel: { fontSize: 11, color: Colors.naturalGrey, fontWeight: '500' },
 
   // Tabs
   tabBar: {
-    flexDirection: 'row',
-    backgroundColor: '#F0F1F3',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 14,
-    borderRadius: 14,
-    padding: 4,
+    flexDirection: 'row', backgroundColor: '#F0F1F3',
+    marginHorizontal: 16, marginTop: 12, marginBottom: 12,
+    borderRadius: 14, padding: 4,
   },
-  tabBtn: {
-    flex: 1,
-    paddingVertical: 9,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
+  tabBtn:       { flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: 'center' },
   tabBtnActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: Colors.white,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08, shadowRadius: 3, elevation: 2,
   },
-  tabLabel: { fontSize: 14, fontWeight: '500', color: '#8B8F94' },
-  tabLabelActive: { fontWeight: '700', color: '#1A1A2E' },
+  tabLabel:       { fontSize: 14, fontWeight: '500', color: Colors.naturalGrey },
+  tabLabelActive: { fontWeight: '700', color: Colors.black },
 
   // Feed
   feedSection: { paddingHorizontal: 16, gap: 12 },
 
-  // Card
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+  // Event card
+  eventCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    backgroundColor: Colors.white, borderRadius: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
+    padding: 16, paddingVertical: 18, marginBottom: 4,
   },
-  thumb: {
-    width: 110,
-    height: 120,
-    backgroundColor: '#E3E4E6',
+  dateBlock: { width: 40, alignItems: 'center', gap: 1 },
+  dateMonth: { fontSize: 9, fontWeight: '600', color: '#8B8F94', letterSpacing: 0.5 },
+  dateDay:   { fontSize: 22, fontWeight: '600', color: '#375169', lineHeight: 26 },
+  dateDow:   { fontSize: 9, fontWeight: '500', color: '#8B8F94', letterSpacing: 0.5 },
+  divider:   { width: 1, alignSelf: 'stretch', backgroundColor: '#E3E4E6' },
+  eventTitle: { fontSize: 13.5, fontWeight: '600', color: '#333333' },
+  eventMeta:  { fontSize: 11.5, color: '#8B8F94', flexShrink: 1 },
+  attendeeCircle: {
+    width: 34, height: 34, borderRadius: 17,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1.5, borderColor: Colors.white,
   },
-  cardBody: {
-    flex: 1,
-    padding: 14,
-    justifyContent: 'center',
-    gap: 5,
+  attendeeInitial: { fontSize: 13, fontWeight: '700' },
+
+  // Saved card
+  savedCard: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: Colors.white, borderRadius: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
+    padding: 16, paddingVertical: 20, marginBottom: 6,
   },
-  cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A2E',
-    letterSpacing: -0.3,
-  },
-  venueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-  },
-  venueName: {
-    fontSize: 13,
-    color: '#5BA8D3',
-    fontWeight: '500',
-    flex: 1,
-  },
-  dateText: {
-    fontSize: 13,
-    color: '#8B8F94',
-  },
-  attendeeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 2,
-  },
-  attendeeAvatar: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
-    borderColor: '#fff',
-    backgroundColor: '#E3E4E6',
-  },
-  attendeeText: {
-    fontSize: 12,
-    color: '#8B8F94',
-  },
+  savedName:    { fontSize: 13.5, fontWeight: '600', color: '#333333' },
+  savedMeta:    { fontSize: 11.5, color: '#8B8F94' },
+  savedTag:     { backgroundColor: Colors.white, borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 20, paddingHorizontal: 12, paddingVertical: 4 },
+  savedTagText: { fontSize: 11, color: '#555' },
+  planBtn:      { backgroundColor: '#4A7FA5', borderRadius: 8, paddingHorizontal: 14, paddingVertical: 8 },
+  planBtnText:  { fontSize: 13, fontWeight: '600', color: Colors.white },
 
   // Empty
-  empty: { alignItems: 'center', paddingVertical: 60 },
-  emptyText: { fontSize: 15, color: '#8B8F94' },
-
+  empty:     { alignItems: 'center', paddingVertical: 60 },
+  emptyText: { fontSize: 15, color: Colors.naturalGrey },
 });

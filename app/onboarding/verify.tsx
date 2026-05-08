@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingHeader from '@/components/OnboardingHeader';
+import { Colors } from '@/constants/Colors';
 
 const CODE = '123456';
 
@@ -68,14 +69,14 @@ export default function VerifyScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:     { flex: 1, backgroundColor: '#fff' },
+  safe:     { flex: 1, backgroundColor: Colors.white },
   content:  { flex: 1, padding: 24, paddingTop: 52, alignItems: 'center' },
-  heading:  { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 8 },
-  sub:      { fontSize: 15, color: '#8B8F94', marginBottom: 44, textAlign: 'center' },
+  heading:  { fontSize: 26, fontWeight: '700', color: Colors.black, letterSpacing: -0.5, marginBottom: 8 },
+  sub:      { fontSize: 15, color: Colors.naturalGrey, marginBottom: 44, textAlign: 'center' },
   boxes:    { flexDirection: 'row', gap: 10, marginBottom: 28 },
-  box:      { width: 46, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: '#E3E4E6',
+  box:      { width: 46, height: 56, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.lightGrey,
               backgroundColor: '#F0F1F3', alignItems: 'center', justifyContent: 'center' },
-  boxFilled:{ borderColor: '#5BA8D3', backgroundColor: '#EBF5FB' },
-  digit:    { fontSize: 24, fontWeight: '700', color: '#1A1A2E' },
+  boxFilled:{ borderColor: Colors.primaryBlue, backgroundColor: '#EBF5FB' },
+  digit:    { fontSize: 24, fontWeight: '700', color: Colors.black },
   note:     { fontSize: 12, color: '#B0B4BA' },
 });

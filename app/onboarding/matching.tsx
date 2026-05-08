@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingHeader from '@/components/OnboardingHeader';
+import { Colors } from '@/constants/Colors';
 import { saveProfile, clearDraft } from '@/lib/store';
 import type { UserProfile, BudgetTier } from '@/lib/store';
 
@@ -145,21 +146,21 @@ export default function MatchingScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:             { flex: 1, backgroundColor: '#fff' },
+  safe:             { flex: 1, backgroundColor: Colors.white },
   content:          { flex: 1, padding: 24, paddingTop: 40 },
-  heading:          { fontSize: 30, fontWeight: '700', color: '#1A1A2E',
+  heading:          { fontSize: 30, fontWeight: '700', color: Colors.black,
                       letterSpacing: -0.5, marginBottom: 6 },
-  sub:              { fontSize: 15, color: '#8B8F94', marginBottom: 36 },
-  card:             { backgroundColor: '#F7F8FA', borderRadius: 16, padding: 24, marginBottom: 20 },
-  message:          { fontSize: 15, fontWeight: '600', color: '#375169', marginBottom: 16 },
-  track:            { height: 6, backgroundColor: '#E3E4E6', borderRadius: 3, overflow: 'hidden' },
-  fill:             { height: 6, backgroundColor: '#5BA8D3', borderRadius: 3 },
+  sub:              { fontSize: 15, color: Colors.naturalGrey, marginBottom: 36 },
+  card:             { backgroundColor: Colors.screenBackground, borderRadius: 16, padding: 24, marginBottom: 20 },
+  message:          { fontSize: 15, fontWeight: '600', color: Colors.deepSlate, marginBottom: 16 },
+  track:            { height: 6, backgroundColor: Colors.lightGrey, borderRadius: 3, overflow: 'hidden' },
+  fill:             { height: 6, backgroundColor: Colors.primaryBlue, borderRadius: 3 },
   completeness:     { backgroundColor: '#EBF5FB', borderRadius: 14, padding: 16, alignItems: 'center' },
   dots:             { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  dotEl:            { width: 8, height: 8, borderRadius: 4, backgroundColor: '#E3E4E6' },
-  dotFilled:        { backgroundColor: '#5BA8D3' },
-  completenessText: { fontSize: 13, color: '#375169', textAlign: 'center', lineHeight: 18 },
-  enterBtn:         { backgroundColor: '#5BA8D3', borderRadius: 14, paddingVertical: 18,
+  dotEl:            { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.lightGrey },
+  dotFilled:        { backgroundColor: Colors.primaryBlue },
+  completenessText: { fontSize: 13, color: Colors.deepSlate, textAlign: 'center', lineHeight: 18 },
+  enterBtn:         { backgroundColor: Colors.primaryBlue, borderRadius: 14, paddingVertical: 18,
                       alignItems: 'center', marginBottom: 8 },
-  enterBtnText:     { color: '#fff', fontSize: 17, fontWeight: '700', letterSpacing: 0.2 },
+  enterBtnText:     { color: Colors.white, fontSize: 17, fontWeight: '700', letterSpacing: 0.2 },
 });

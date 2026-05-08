@@ -1,21 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, ScrollView, Pressable, Image, StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ScaleBtn } from '@/components/ScaleBtn';
+import { Colors } from '@/constants/Colors';
+import { acceptEvent, cancelEvent, isAccepted } from '@/lib/events';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const ACCENT = '#375169';
-const CHIPS = ['All', 'Invites', 'Updates', 'Social'] as const;
-type Chip = typeof CHIPS[number];
+const ACCENT = Colors.deepSlate;
+const TAB_ITEMS = [
+  { id: 'Invites', icon: 'mail-outline', label: 'Invites' },
+  { id: 'Updates', icon: 'flash-outline', label: 'Updates' },
+  { id: 'Social', icon: 'heart-outline', label: 'Social' },
+] as const;
+type TabId = typeof TAB_ITEMS[number]['id'];
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
+// ─── Mock data (Truncated for brevity) ────────────────────────────────────────
 
 const UPCOMING = {
+  eventId: 'event-upcoming-1',
   title:   'Trivia Tuesday at Ponysaurus',
   host:    'Jordan K',
   venue:   'Ponysaurus Brewing',
@@ -32,41 +40,32 @@ const UPCOMING = {
 
 const MOCK_INVITES = [
   {
-    id: 'inv1',  host: 'Maya Torres',      initials: 'MT',
-    venue: 'Mateo Bar de Tapas',   venueId: 'V007',
+    id: 'inv1', eventId: 'event-inv1', title: 'Tapas Night', host: 'Maya Torres', initials: 'MT',
+    venue: 'Mateo Bar de Tapas', venueId: 'V007',
     image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80',
-    date: 'Sat, Feb 8',  time: '8:00 PM',   attendees: 4,
+    date: 'Sat, Feb 8', time: '8:00 PM', attendees: 4,
     tags: ['Tapas', 'Cocktails'],
   },
   {
-    id: 'inv2',  host: 'Chris Dos Santos',  initials: 'CS',
-    venue: 'Eno River State Park',  venueId: 'V023',
+    id: 'inv2', eventId: 'event-inv2', title: 'Morning Hike', host: 'Chris Dos Santos', initials: 'CS',
+    venue: 'Eno River State Park', venueId: 'V023',
     image: 'https://images.unsplash.com/photo-1448375240586-882707db888b?w=800&q=80',
-    date: 'Sun, Feb 9',  time: '10:00 AM',  attendees: 6,
+    date: 'Sun, Feb 9', time: '10:00 AM', attendees: 6,
     tags: ['Outdoors', 'Hiking'],
   },
 ];
 
-type UpdateKind = 'like' | 'comment' | 'join' | 'follow';
-
-const MOCK_UPDATES: Array<{
-  id: string; kind: UpdateKind; actor: string; initials: string;
-  action: string; target: string; time: string;
-}> = [
-  { id: 'u1', kind: 'like',    actor: 'Mesha Robinson',  initials: 'MR', action: 'liked your post at',      target: 'Café Lumière',       time: '2h ago' },
-  { id: 'u2', kind: 'comment', actor: 'Asili Johnson',   initials: 'AS', action: 'commented on your event', target: 'Sunday Brunch Club', time: '4h ago' },
-  { id: 'u3', kind: 'join',    actor: 'Johanna Kepler',  initials: 'JK', action: 'joined your event at',    target: 'Ponysaurus Brewing', time: '1d ago' },
-  { id: 'u4', kind: 'follow',  actor: 'Sam Carter',      initials: 'SC', action: 'started following you',   target: '',                   time: '2d ago' },
+const MOCK_EVENT_UPDATES = [
+  { id: 'e1', eventId: 'event-update-1', kind: 'join', actor: 'Ari Patel', initials: 'AP', action: 'joined your event', target: 'Rooftop Mixer', time: '1h ago' },
+  { id: 'e2', eventId: 'event-update-2', kind: 'cancel', actor: 'Noah Grant', initials: 'NG', action: 'cancelled their spot at', target: 'Sunday Beats', time: '3h ago' },
 ];
 
-const KIND_ICON: Record<UpdateKind, React.ComponentProps<typeof Ionicons>['name']> = {
-  like: 'heart', comment: 'chatbubble', join: 'person-add', follow: 'person-add',
-};
-const KIND_COLOR: Record<UpdateKind, string> = {
-  like: '#E05C5C', comment: '#5BA8D3', join: ACCENT, follow: ACCENT,
-};
+const MOCK_SOCIAL = [
+  { id: 's1', eventId: 'event-social-1', kind: 'like', actor: 'Mesha Robinson', initials: 'MR', action: 'liked your post at', target: 'Café Lumière', time: '2h ago' },
+  { id: 's2', eventId: 'event-social-2', kind: 'comment', actor: 'Asili Johnson', initials: 'AS', action: 'commented on your event', target: 'Sunday Brunch Club', time: '4h ago' },
+];
 
-// ─── Section label ────────────────────────────────────────────────────────────
+// ─── Sub-Components ────────────────────────────────────────────────────────────
 
 function SectionLabel({ text, count }: { text: string; count?: number }) {
   return (
@@ -81,208 +80,164 @@ function SectionLabel({ text, count }: { text: string; count?: number }) {
   );
 }
 
-// ─── Upcoming hero card ───────────────────────────────────────────────────────
-
 function UpcomingCard() {
   return (
-    <View style={s.heroCard}>
-      <View style={s.timePill}>
-        <Text style={s.timePillText}>{UPCOMING.time}</Text>
-      </View>
+    <Pressable style={({ pressed }) => [s.heroCard, pressed && { opacity: 0.95 }]} onPress={() => router.push({ pathname: '/event-detail', params: { id: UPCOMING.eventId } })}>
+      <View style={s.timePill}><Text style={s.timePillText}>{UPCOMING.time}</Text></View>
       <Text style={s.heroTitle}>{UPCOMING.title}</Text>
-      <Text style={s.heroMeta}>Hosted by {UPCOMING.host} · {UPCOMING.venue}</Text>
-
+      <View style={s.heroMetaRow}>
+        <Text style={s.heroMeta}>Hosted by {UPCOMING.host} · </Text>
+        <Pressable onPress={(e) => { e.stopPropagation(); router.push(`/venue/${UPCOMING.venueId}`); }}>
+          <Text style={[s.heroMeta, s.linkText]}>{UPCOMING.venue}</Text>
+        </Pressable>
+      </View>
       <View style={s.avatarStack}>
         {UPCOMING.avatars.map((uri, i) => (
-          <Image
-            key={i}
-            source={{ uri }}
-            style={[s.stackAvatar, { marginLeft: i > 0 ? -8 : 0, zIndex: 5 - i }]}
-          />
+          <Image key={i} source={{ uri }} style={[s.stackAvatar, { marginLeft: i > 0 ? -8 : 0, zIndex: 5 - i }]} />
         ))}
       </View>
-
       <View style={s.heroButtons}>
-        <ScaleBtn
-          containerStyle={{ flex: 1 }}
-          style={s.heroDirectionsBtn}
-          pressedStyle={{ backgroundColor: 'rgba(255,255,255,0.25)' }}
-          onPress={() => {}}
-        >
-          <Text style={s.heroDirectionsBtnText}>Directions</Text>
-        </ScaleBtn>
-        <ScaleBtn
-          containerStyle={{ flex: 1 }}
-          style={s.heroImInBtn}
-          pressedStyle={{ backgroundColor: '#E8F2F8' }}
-          onPress={() => {}}
-        >
-          <Text style={s.heroImInBtnText}>I'm in</Text>
-        </ScaleBtn>
+        <ScaleBtn containerStyle={{ flex: 1 }} style={s.heroDirectionsBtn} onPress={() => router.push(`/venue/${UPCOMING.venueId}`)}><Text style={s.heroDirectionsBtnText}>Directions</Text></ScaleBtn>
+        <ScaleBtn containerStyle={{ flex: 1 }} style={s.heroImInBtn} onPress={() => router.push({ pathname: '/event-detail', params: { id: UPCOMING.eventId } })}><Text style={s.heroImInBtnText}>I'm in</Text></ScaleBtn>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
-// ─── Invite card ─────────────────────────────────────────────────────────────
+function InviteCard({ item, refresh }: { item: typeof MOCK_INVITES[number]; refresh: number }) {
+  const [responded, setResponded] = useState<'declined' | null>(null);
+  const [accepted, setAccepted] = useState(() => isAccepted(item.eventId));
 
-function InviteCard({ item }: { item: typeof MOCK_INVITES[number] }) {
-  const [responded, setResponded] = useState<'accepted' | 'declined' | null>(null);
+  useEffect(() => {
+    setAccepted(isAccepted(item.eventId));
+  }, [item.eventId, refresh]);
 
   if (responded === 'declined') return null;
 
-  return (
-    <View style={s.inviteCard}>
-      <View style={s.inviteHeader}>
-        <View style={s.inviteAvatar}>
-          <Text style={s.inviteAvatarText}>{item.initials}</Text>
-        </View>
-        <Text style={s.inviteHeadline}>
-          <Text style={s.inviteName}>{item.host}</Text>
-          {' is inviting you'}
-        </Text>
-      </View>
+  function handleAccept() {
+    acceptEvent(item.eventId);
+    setAccepted(true);
+  }
 
-      <Pressable
-        style={({ pressed }) => [s.inviteImgWrap, pressed && { opacity: 0.9 }]}
-        onPress={() => router.push(`/venue/${item.venueId}`)}
-      >
+  function handleCancel() {
+    cancelEvent(item.eventId);
+    setAccepted(false);
+  }
+
+  return (
+    <Pressable style={s.inviteCard} onPress={() => router.push({ pathname: '/event-detail', params: { id: item.eventId } })}>
+      <View style={s.inviteHeader}>
+        <View style={s.inviteAvatar}><Text style={s.inviteAvatarText}>{item.initials}</Text></View>
+        <Text style={s.inviteHeadline}><Text style={s.inviteName}>{item.host}</Text> is inviting you</Text>
+      </View>
+      <View style={s.inviteImgWrap}>
         <Image source={{ uri: item.image }} style={s.inviteImage} resizeMode="cover" />
-        <View style={s.inviteTagsOverlay}>
+        <View style={s.tagOverlay}>
           {item.tags.map(tag => (
-            <View key={tag} style={s.inviteTag}>
-              <Text style={s.inviteTagText}>{tag}</Text>
+            <View key={tag} style={s.imgTag}>
+              <Text style={s.imgTagText}>{tag}</Text>
             </View>
           ))}
         </View>
-      </Pressable>
-
-      <View style={s.inviteFooterRow}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text style={s.inviteVenue}>{item.venue}</Text>
-          <Text style={s.inviteMeta}>{item.date} · {item.time} · {item.attendees} going</Text>
-        </View>
       </View>
-
-      {responded === 'accepted' ? (
-        <View style={s.acceptedBadge}>
-          <Ionicons name="checkmark-circle" size={16} color={ACCENT} />
-          <Text style={s.acceptedText}>You're in!</Text>
+      <View style={s.inviteTitleRow}>
+        <Text style={s.inviteTitle}>{item.title}</Text>
+        <Pressable onPress={(e) => { e.stopPropagation(); router.push(`/venue/${item.venueId}`); }}>
+          <Text style={s.inviteVenue}>{item.venue}</Text>
+        </Pressable>
+      </View>
+      <Text style={s.inviteMeta}>{item.date} · {item.time} · {item.attendees} going</Text>
+      {accepted ? (
+        <View style={s.acceptedActions}>
+          <ScaleBtn containerStyle={{ flex: 0.25 }} style={s.cancelBtnSmall} onPress={handleCancel}>
+            <Text style={s.cancelBtnSmallText}>Cancel</Text>
+          </ScaleBtn>
+          <View style={[s.goingBadge, { flex: 0.75 }]}>
+            <Text style={s.goingBadgeText}>You&apos;re going ✓</Text>
+          </View>
         </View>
       ) : (
         <View style={s.inviteActions}>
-          <Pressable
-            style={({ pressed }) => [s.declineBtn, pressed && { opacity: 0.7 }]}
-            onPress={() => setResponded('declined')}
-          >
-            <Text style={s.declineBtnText}>Decline</Text>
-          </Pressable>
-          <ScaleBtn
-            containerStyle={{ flex: 1 }}
-            style={s.acceptBtn}
-            pressedStyle={{ backgroundColor: '#2D4357' }}
-            onPress={() => setResponded('accepted')}
-          >
-            <Text style={s.acceptBtnText}>Accept</Text>
-          </ScaleBtn>
+          <ScaleBtn containerStyle={{ flex: 1 }} style={s.declineBtn} onPress={() => setResponded('declined')}><Text style={s.declineBtnText}>Decline</Text></ScaleBtn>
+          <ScaleBtn containerStyle={{ flex: 1 }} style={s.acceptBtn} onPress={handleAccept}><Text style={s.acceptBtnText}>Accept</Text></ScaleBtn>
         </View>
       )}
-    </View>
+    </Pressable>
   );
 }
 
-// ─── Update row ───────────────────────────────────────────────────────────────
-
-function UpdateRow({ item }: { item: typeof MOCK_UPDATES[number] }) {
+function UpdateRow({ item }: { item: any }) {
   return (
-    <Pressable style={({ pressed }) => [s.updateRow, pressed && { opacity: 0.8 }]}>
-      <View style={s.updateAvatar}>
-        <Text style={s.updateAvatarText}>{item.initials}</Text>
-      </View>
+    <Pressable style={s.updateRow} onPress={() => item.eventId && router.push({ pathname: '/event-detail', params: { id: item.eventId } })}>
+      <View style={s.updateAvatar}><Text style={s.updateAvatarText}>{item.initials}</Text></View>
       <View style={s.updateBody}>
-        <Text style={s.updateText} numberOfLines={2}>
-          <Text style={s.updateActor}>{item.actor}</Text>
-          {' ' + item.action}
-          {item.target ? <Text style={s.updateTarget}> {item.target}</Text> : null}
-        </Text>
+        <Text style={s.updateText}><Text style={s.updateActor}>{item.actor}</Text> {item.action} <Text style={s.updateTarget}>{item.target}</Text></Text>
         <Text style={s.updateTime}>{item.time}</Text>
       </View>
     </Pressable>
   );
 }
 
-// ─── Screen ───────────────────────────────────────────────────────────────────
+// ─── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function ActivityScreen() {
-  const [activeChip, setActiveChip] = useState<Chip>('All');
+  const [activeTab, setActiveTab] = useState<TabId>('Invites');
+  const [refresh, setRefresh] = useState(0);
 
-  const showUpcoming = activeChip !== 'Social';
-  const showInvites  = activeChip === 'All' || activeChip === 'Invites';
-  const showActivity = activeChip === 'All' || activeChip === 'Updates' || activeChip === 'Social';
-  const visibleUpdates =
-    activeChip === 'Social'  ? MOCK_UPDATES.filter(u => u.kind === 'like' || u.kind === 'comment') :
-    activeChip === 'Updates' ? MOCK_UPDATES.filter(u => u.kind === 'join' || u.kind === 'follow') :
-    MOCK_UPDATES;
+  useFocusEffect(
+    useCallback(() => {
+      setRefresh(value => value + 1);
+    }, [])
+  );
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Activity</Text>
-        <Pressable style={({ pressed }) => pressed ? { opacity: 0.7 } : {}}>
-          <Text style={s.markRead}>Mark all read</Text>
-        </Pressable>
-      </View>
 
-      {/* Filter chips */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={s.chipsRow}
-        style={s.chipsWrap}
-      >
-        {CHIPS.map(chip => {
-          const active = chip === activeChip;
-          return (
-            <Pressable
-              key={chip}
-              onPress={() => setActiveChip(chip)}
-              style={({ pressed }) => [s.chip, active && s.chipActive, pressed && { opacity: 0.7 }]}
-            >
-              <Text style={[s.chipText, active && s.chipTextActive]}>{chip}</Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
-
-      {/* Content */}
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={s.scroll}>
+        <SectionLabel text="UPCOMING · TODAY" />
+        <UpcomingCard />
 
-        {showUpcoming && (
+        <View style={s.tabBar}>
+          {TAB_ITEMS.map(tab => (
+            <Pressable
+              key={tab.id}
+              onPress={() => setActiveTab(tab.id)}
+              style={[s.tabItem, activeTab === tab.id && s.tabItemActive]}
+            >
+              <Ionicons
+                name={tab.icon}
+                size={22}
+                color={activeTab === tab.id ? ACCENT : Colors.naturalGrey}
+              />
+              <Text style={[s.tabText, activeTab === tab.id && s.tabTextActive]}>{tab.label}</Text>
+            </Pressable>
+          ))}
+        </View>
+
+        {activeTab === 'Invites' && (
           <>
-            <SectionLabel text="UPCOMING · TODAY" />
-            <UpcomingCard />
+            <SectionLabel text="PENDING INVITES" count={MOCK_INVITES.length} />
+            {MOCK_INVITES.map(item => <InviteCard key={item.id} item={item} refresh={refresh} />)}
           </>
         )}
 
-        {showInvites && (
+        {activeTab === 'Updates' && (
           <>
-            <SectionLabel text="INVITES AWAITING YOU" count={MOCK_INVITES.length} />
-            <View style={s.gap}>
-              {MOCK_INVITES.map(item => <InviteCard key={item.id} item={item} />)}
+            <SectionLabel text="EVENT UPDATES" />
+            <View style={s.updatesCard}>
+              {MOCK_EVENT_UPDATES.map(item => (
+                <UpdateRow key={item.id} item={item} />
+              ))}
             </View>
           </>
         )}
 
-        {showActivity && visibleUpdates.length > 0 && (
+        {activeTab === 'Social' && (
           <>
-            <SectionLabel text="RECENT ACTIVITY" />
+            <SectionLabel text="SOCIAL" />
             <View style={s.updatesCard}>
-              {visibleUpdates.map((item, i) => (
-                <View key={item.id}>
-                  <UpdateRow item={item} />
-                  {i < visibleUpdates.length - 1 && <View style={s.updateDivider} />}
-                </View>
+              {MOCK_SOCIAL.map(item => (
+                <UpdateRow key={item.id} item={item} />
               ))}
             </View>
           </>
@@ -297,128 +252,124 @@ export default function ActivityScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#F7F8FA' },
+  safe: { flex: 1, backgroundColor: Colors.screenBackground },
 
-  // Header
+  // Header Styles (Added missing styles here)
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 10,
-    backgroundColor: '#F7F8FA',
+    paddingVertical: 12,
+    backgroundColor: Colors.screenBackground,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.4 },
-  markRead:    { fontSize: 14, fontWeight: '600', color: ACCENT },
+  headerBtn: { 
+    width: 36, 
+    height: 36, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+
+  tabBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 16,
+    marginBottom: 16,
+    borderRadius: 18,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: Colors.lightGrey,
+    overflow: 'hidden',
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  tabItemActive: {
+    borderBottomColor: ACCENT,
+  },
+  tabText: {
+    marginTop: 4,
+    fontSize: 12,
+    color: Colors.naturalGrey,
+  },
+  tabTextActive: {
+    color: ACCENT,
+    fontWeight: '700',
+  },
 
   // Chips
   chipsWrap: { flexShrink: 0, marginBottom: 4 },
   chipsRow:  { paddingLeft: 16, paddingRight: 16, paddingVertical: 6, gap: 8, flexDirection: 'row' },
   chip: {
     height: 32, paddingHorizontal: 14, borderRadius: 16,
-    backgroundColor: '#E3E4E6', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: Colors.lightGrey, justifyContent: 'center', alignItems: 'center',
   },
   chipActive:     { backgroundColor: ACCENT },
-  chipText:       { fontSize: 13, color: '#6B7280' },
-  chipTextActive: { color: '#FFFFFF' },
+  chipText:       { fontSize: 13, color: Colors.inactiveChipText },
+  chipTextActive: { color: Colors.white },
 
-  // Scroll
+  // Rest of styles...
   scroll: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: 100 },
-
-  // Section
   sectionRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 20, marginBottom: 8 },
-  sectionLabel: { fontSize: 10, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1 },
-  countBadge: {
-    width: 18, height: 18, borderRadius: 9,
-    backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center',
-  },
-  countText: { fontSize: 10, fontWeight: '700', color: '#fff' },
-
-  gap: { gap: 12 },
-
-  // ── Hero card ──
-  heroCard: { backgroundColor: ACCENT, borderRadius: 16, padding: 16 },
-  timePill: {
-    alignSelf: 'flex-start', backgroundColor: '#FEF3C7',
-    borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4,
-  },
-  timePillText:          { fontSize: 11, fontWeight: '600', color: '#92400E' },
-  heroTitle:             { fontSize: 18, fontWeight: '600', color: '#fff', marginTop: 8 },
-  heroMeta:              { fontSize: 13, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
-  avatarStack:           { flexDirection: 'row', marginTop: 12 },
-  stackAvatar: {
-    width: 28, height: 28, borderRadius: 14,
-    borderWidth: 2, borderColor: ACCENT,
-    backgroundColor: '#B7D3E0',
-  },
-  heroButtons:           { flexDirection: 'row', marginTop: 12, gap: 8 },
-  heroDirectionsBtn: {
-    height: 36, borderRadius: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  heroDirectionsBtnText: { fontSize: 14, fontWeight: '500', color: '#fff' },
-  heroImInBtn: {
-    height: 36, borderRadius: 8,
-    backgroundColor: '#fff',
-    alignItems: 'center', justifyContent: 'center',
-  },
+  sectionLabel: { fontSize: 10, fontWeight: '700', color: Colors.naturalGrey, letterSpacing: 1 },
+  countBadge: { width: 18, height: 18, borderRadius: 9, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
+  countText: { fontSize: 10, fontWeight: '700', color: Colors.white },
+  heroCard: { backgroundColor: ACCENT, borderRadius: 16, padding: 16, marginTop: 8 },
+  timePill: { alignSelf: 'flex-start', backgroundColor: '#FEF3C7', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  timePillText: { fontSize: 11, fontWeight: '600', color: '#92400E' },
+  heroTitle: { fontSize: 18, fontWeight: '600', color: Colors.white, marginTop: 8 },
+  heroMeta: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
+  heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 4 },
+  linkText: { color: Colors.primaryBlue, textDecorationLine: 'underline' },
+  avatarStack: { flexDirection: 'row', marginTop: 12 },
+  stackAvatar: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, borderColor: ACCENT },
+  heroButtons: { flexDirection: 'row', marginTop: 12, gap: 8 },
+  heroDirectionsBtn: { height: 36, borderRadius: 8, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center' },
+  heroDirectionsBtnText: { fontSize: 14, fontWeight: '500', color: Colors.white },
+  heroImInBtn: { height: 36, borderRadius: 8, backgroundColor: Colors.white, alignItems: 'center', justifyContent: 'center' },
   heroImInBtnText: { fontSize: 14, fontWeight: '600', color: ACCENT },
-
-  // ── Invite card ──
   inviteCard: {
-    backgroundColor: '#fff', borderRadius: 16, padding: 14, gap: 12,
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
+    backgroundColor: Colors.white, borderRadius: 16, padding: 14, gap: 12, marginTop: 8,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
   },
-  inviteHeader:      { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  inviteAvatar: {
-    width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#5BA8D3', alignItems: 'center', justifyContent: 'center',
-  },
-  inviteAvatarText:  { fontSize: 14, fontWeight: '700', color: '#fff' },
-  inviteHeadline:    { fontSize: 14, color: ACCENT },
-  inviteName:        { fontWeight: '700', color: '#1A1A2E' },
-  inviteImgWrap:     { borderRadius: 12, overflow: 'hidden' },
-  inviteImage:       { width: '100%', height: 150, backgroundColor: '#E3E4E6' },
-  inviteTagsOverlay: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', gap: 6 },
-  inviteTag:         { backgroundColor: 'rgba(26,26,46,0.68)', borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
-  inviteTagText:     { fontSize: 11, fontWeight: '600', color: '#fff' },
-  inviteFooterRow:   { flexDirection: 'row', alignItems: 'center' },
-  inviteVenue:       { fontSize: 14, fontWeight: '700', color: '#1A1A2E' },
-  inviteMeta:        { fontSize: 12, color: '#5BA8D3' },
-  inviteActions:     { flexDirection: 'row', gap: 8 },
-  declineBtn: {
-    flex: 1, height: 38, borderRadius: 10,
-    borderWidth: 1.5, borderColor: '#E3E4E6',
-    alignItems: 'center', justifyContent: 'center',
-  },
-  declineBtnText:  { fontSize: 14, fontWeight: '600', color: '#8B8F94' },
-  acceptBtn: {
-    height: 38, borderRadius: 10,
-    backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center',
-  },
-  acceptBtnText:   { fontSize: 14, fontWeight: '600', color: '#fff' },
-  acceptedBadge:   { flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center', paddingVertical: 4 },
-  acceptedText:    { fontSize: 14, fontWeight: '600', color: ACCENT },
-
-  // ── Updates card ──
-  updatesCard: {
-    backgroundColor: '#fff', borderRadius: 16, overflow: 'hidden',
-    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05, shadowRadius: 4, elevation: 1,
-  },
-  updateRow:        { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
-  updateAvatar: {
-    width: 42, height: 42, borderRadius: 21,
-    backgroundColor: '#EBF5FB', alignItems: 'center', justifyContent: 'center',
-  },
+  inviteHeader: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  inviteAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: Colors.primaryBlue, alignItems: 'center', justifyContent: 'center' },
+  inviteAvatarText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  inviteTitle: { fontSize: 17, fontWeight: '700', color: Colors.black },
+  inviteHeadline: { fontSize: 14, color: Colors.naturalGrey },
+  inviteName: { fontWeight: '700', color: Colors.black },
+  inviteImgWrap: { borderRadius: 12, overflow: 'hidden', position: 'relative' },
+  inviteImage: { width: '100%', height: 160, backgroundColor: Colors.lightGrey },
+  tagOverlay: { position: 'absolute', top: 10, left: 10, flexDirection: 'row', gap: 6 },
+  imgTag: { backgroundColor: 'rgba(0,0,0,0.58)', borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4 },
+  imgTagText: { fontSize: 12, fontWeight: '600', color: Colors.white },
+  inviteTitleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 8, marginBottom: 4 },
+  inviteFooterRow: { flexDirection: 'row', alignItems: 'center' },
+  inviteVenue: { fontSize: 13, fontWeight: '600', color: Colors.primaryBlue },
+  inviteMeta: { fontSize: 14, color: Colors.naturalGrey, marginTop: 0 },
+  inviteActions: { flexDirection: 'row', gap: 8 },
+  acceptedActions: { flexDirection: 'row', gap: 8, alignItems: 'center' },
+  goingBadge: { flex: 1, height: 42, borderRadius: 12, backgroundColor: '#E8F2F8', alignItems: 'center', justifyContent: 'center' },
+  goingBadgeText: { fontSize: 14, fontWeight: '700', color: Colors.deepSlate },
+  cancelBtnSmall: { height: 42, borderRadius: 12, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.lightGrey, alignItems: 'center', justifyContent: 'center' },
+  cancelBtnSmallText: { fontSize: 14, fontWeight: '600', color: Colors.naturalGrey },
+  declineBtn: { height: 42, borderRadius: 12, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.lightGrey, alignItems: 'center', justifyContent: 'center' },
+  declineBtnText: { fontSize: 14, fontWeight: '500', color: Colors.naturalGrey },
+  acceptBtn: { height: 42, borderRadius: 12, backgroundColor: ACCENT, alignItems: 'center', justifyContent: 'center' },
+  acceptBtnText: { fontSize: 14, fontWeight: '600', color: Colors.white },
+  updatesCard: { backgroundColor: Colors.white, borderRadius: 16, overflow: 'hidden', marginTop: 8 },
+  updateRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  updateAvatar: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#EBF5FB', alignItems: 'center', justifyContent: 'center' },
   updateAvatarText: { fontSize: 14, fontWeight: '700', color: ACCENT },
-  updateBody:    { flex: 1 },
-  updateText:    { fontSize: 14, color: '#4A4A5A', lineHeight: 19 },
-  updateActor:   { fontWeight: '700', color: '#1A1A2E' },
-  updateTarget:  { color: '#5BA8D3', fontWeight: '600' },
-  updateTime:    { fontSize: 12, color: '#B0B4BA', marginTop: 2 },
-  updateDivider: { height: 1, backgroundColor: '#F0F0F0', marginLeft: 68 },
+  updateBody: { flex: 1 },
+  updateText: { fontSize: 14, color: '#4A4A5A', lineHeight: 19 },
+  updateActor: { fontWeight: '700', color: Colors.black },
+  updateTarget: { color: Colors.primaryBlue, fontWeight: '600' },
+  updateTime: { fontSize: 12, color: '#B0B4BA', marginTop: 2 },
 });

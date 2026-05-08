@@ -2,6 +2,7 @@ import { Redirect } from 'expo-router';
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { View } from 'react-native';
+import { Colors } from '@/constants/Colors';
 
 export default function Index() {
   const [ready, setReady] = useState(false);
@@ -16,7 +17,7 @@ export default function Index() {
       });
   }, []);
 
-  if (!ready) return <View style={{ flex: 1, backgroundColor: '#fff' }} />;
+  if (!ready) return <View style={{ flex: 1, backgroundColor: Colors.white }} />;
   if (complete) return <Redirect href="/(tabs)/explore" />;
   return <Redirect href="/onboarding/name" />;
 }

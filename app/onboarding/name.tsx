@@ -1,111 +1,75 @@
-import { useState } from 'react';
-import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import { View, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { router } from 'expo-router';
-import OnboardingHeader from '@/components/OnboardingHeader';
-import { saveDraft } from '@/lib/store';
+import { OnboardingLayout } from '@/components/OnboardingLayout';
+import { useOnboarding } from '@/lib/OnboardingContext';
 
 export default function NameScreen() {
+  const { updateData } = useOnboarding();
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName]   = useState('');
-  const [phone, setPhone]         = useState('');
-  const [error, setError]         = useState('');
+  const [lastName, setLastName] = useState('');
+  const [focusedField, setFocusedField] = useState<'first' | 'last' | null>(null);
 
-  const valid = firstName.trim().length > 0
-    && lastName.trim().length > 0
-    && phone.trim().length >= 10;
+  const isValid = firstName.trim().length > 0 && lastName.trim().length > 0;
 
-  async function handleContinue() {
-    if (!valid) { setError('Please fill in all three fields.'); return; }
-    await saveDraft({
-      first_name: firstName.trim(),
-      last_name:  lastName.trim(),
-      phone:      phone.trim(),
-    });
-    router.push('/onboarding/verify');
+  function handleContinue() {
+    updateData({ name: { first: firstName, last: lastName } });
+    router.push('/onboarding/location');
   }
 
   return (
-    <SafeAreaView style={s.safe}>
-      <OnboardingHeader step={1} showBack={false} />
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={s.root}
+    >
+      <OnboardingLayout
+        progress={36}
+        question="What's your name?"
+        subtitle="This shows on your invites and plans."
+        continueDisabled={!isValid}
+        onContinue={handleContinue}
       >
-        <ScrollView
-          contentContainerStyle={s.content}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Text style={s.heading}>What's your name?</Text>
-          <Text style={s.sub}>Your profile is visible to friends on Blyss.</Text>
-
-          <Text style={s.label}>First name</Text>
+        <View style={s.inputsContainer}>
           <TextInput
-            style={s.input}
+            style={[s.input, focusedField === 'first' && s.inputFocused]}
+            placeholder="First name"
+            placeholderTextColor="#A0A4A8"
             value={firstName}
-            onChangeText={t => { setFirstName(t); setError(''); }}
-            placeholder="Alana"
-            placeholderTextColor="#B0B4BA"
-            autoCapitalize="words"
-            returnKeyType="next"
+            onChangeText={setFirstName}
+            onFocus={() => setFocusedField('first')}
+            onBlur={() => setFocusedField(null)}
           />
-
-          <Text style={s.label}>Last name</Text>
           <TextInput
-            style={s.input}
+            style={[s.input, focusedField === 'last' && s.inputFocused]}
+            placeholder="Last name"
+            placeholderTextColor="#A0A4A8"
             value={lastName}
-            onChangeText={t => { setLastName(t); setError(''); }}
-            placeholder="Stull"
-            placeholderTextColor="#B0B4BA"
-            autoCapitalize="words"
-            returnKeyType="next"
+            onChangeText={setLastName}
+            onFocus={() => setFocusedField('last')}
+            onBlur={() => setFocusedField(null)}
           />
-
-          <Text style={s.label}>Phone number</Text>
-          <TextInput
-            style={s.input}
-            value={phone}
-            onChangeText={t => { setPhone(t); setError(''); }}
-            placeholder="(919) 555-0100"
-            placeholderTextColor="#B0B4BA"
-            keyboardType="phone-pad"
-            returnKeyType="done"
-          />
-          <Text style={s.hint}>We'll text you a verification code. No spam.</Text>
-
-          {!!error && <Text style={s.error}>{error}</Text>}
-        </ScrollView>
-
-        <View style={s.footer}>
-          <TouchableOpacity
-            style={[s.btn, !valid && s.btnOff]}
-            onPress={handleContinue}
-            disabled={!valid}
-          >
-            <Text style={s.btnText}>Continue</Text>
-          </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      </OnboardingLayout>
+    </KeyboardAvoidingView>
   );
 }
 
 const s = StyleSheet.create({
-  safe:    { flex: 1, backgroundColor: '#fff' },
-  content: { padding: 24, paddingBottom: 8 },
-  heading: { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:     { fontSize: 15, color: '#8B8F94', marginBottom: 28 },
-  label:   { fontSize: 11, fontWeight: '700', color: '#375169', letterSpacing: 0.8,
-             textTransform: 'uppercase', marginBottom: 6 },
-  input:   { backgroundColor: '#F0F1F3', borderRadius: 12, paddingHorizontal: 16,
-             paddingVertical: 14, fontSize: 16, color: '#1A1A2E', marginBottom: 16 },
-  hint:    { fontSize: 12, color: '#B0B4BA', marginTop: -8, marginBottom: 8 },
-  error:   { fontSize: 13, color: '#D45F3C', marginTop: 4 },
-  footer:  { padding: 24, paddingTop: 8 },
-  btn:     { borderRadius: 14, paddingVertical: 18, alignItems: 'center', backgroundColor: '#375169' },
-  btnOff:  { backgroundColor: '#A8D4EC' },
-  btnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  root: { flex: 1 },
+  inputsContainer: {
+    gap: 12,
+    marginTop: 8,
+  },
+  input: {
+    height: 48,
+    borderWidth: 1,
+    borderColor: '#E3E4E6',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    fontSize: 15,
+    color: '#333333',
+  },
+  inputFocused: {
+    borderColor: '#4A7FA5',
+  },
 });

@@ -5,9 +5,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { PlusSquare, MessageCircle } from 'lucide-react-native';
 import { MOCK_FRIENDS, MOCK_EVENTS, MOCK_JOURNAL } from '@/lib/store';
 import { ScaleBtn } from '@/components/ScaleBtn';
+import { ShareSheet } from '@/components/ShareSheet';
+import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
+
+function authorId(name: string) {
+  return name.toLowerCase().replace(/\s+/g, '-').replace(/\./g, '');
+}
 
 // ─── Derive post data from MOCK_JOURNAL + VENUES ──────────────────────────────
 
@@ -39,6 +46,7 @@ const INVITES = MOCK_EVENTS.map(evt => {
   return {
     id:          evt.id,
     host:        evt.attendees[0] ?? 'Someone',
+    venueId:     evt.venue_id,
     image:       venue?.image ?? '',
     tags:        (venue?.tags ?? []).slice(0, 2) as string[],
     venueName:   evt.venue,
@@ -64,7 +72,7 @@ while (pi < POSTS.length || ii < INVITES.length) {
 
 // ─── Post card ────────────────────────────────────────────────────────────────
 
-function PostCard({ item }: { item: typeof POSTS[number] }) {
+function PostCard({ item, onShare }: { item: typeof POSTS[number]; onShare: () => void }) {
   const [liked,     setLiked]     = useState(false);
   const [likeCount, setLikeCount] = useState(item.likes);
 
@@ -78,13 +86,18 @@ function PostCard({ item }: { item: typeof POSTS[number] }) {
     <View style={c.card}>
       {/* Top row: avatar · name/timestamp · venue right-justified */}
       <View style={c.topRow}>
-        <View style={c.avatar}>
-          <Text style={c.avatarText}>{initials}</Text>
-        </View>
-        <View style={c.nameBlock}>
-          <Text style={c.authorName}>{item.author}</Text>
-          <Text style={c.timestamp}>{item.time}</Text>
-        </View>
+        <Pressable
+          style={({ pressed }) => [c.authorRow, pressed && { opacity: 0.7 }]}
+          onPress={() => router.push(`/user-profile/${authorId(item.author)}`)}
+        >
+          <View style={c.avatar}>
+            <Text style={c.avatarText}>{initials}</Text>
+          </View>
+          <View style={c.nameBlock}>
+            <Text style={c.authorName}>{item.author}</Text>
+            <Text style={c.timestamp}>{item.time}</Text>
+          </View>
+        </Pressable>
         <Pressable style={({ pressed }) => [c.venueRow, pressed && { opacity: 0.7 }]} onPress={() => router.push(`/venue/${item.venueId}`)}>
           <Text style={c.venueLink}>{item.venue}</Text>
         </Pressable>
@@ -98,15 +111,15 @@ function PostCard({ item }: { item: typeof POSTS[number] }) {
       {/* Actions */}
       <View style={c.actionsRow}>
         <Pressable style={({ pressed }) => [c.actionBtn, pressed && { opacity: 0.7 }]} onPress={toggleLike}>
-          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={18} color={liked ? '#E05C5C' : '#9CA3AF'} />
+          <Ionicons name={liked ? 'heart' : 'heart-outline'} size={18} color={liked ? '#E05C5C' : Colors.naturalGrey} />
           <Text style={c.actionCount}>{likeCount}</Text>
         </Pressable>
         <Pressable style={({ pressed }) => [c.actionBtn, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="chatbubble-outline" size={18} color="#9CA3AF" />
+          <Ionicons name="chatbubble-outline" size={18} color={Colors.naturalGrey} />
           <Text style={c.actionCount}>{item.comments}</Text>
         </Pressable>
-        <Pressable style={({ pressed }) => [c.actionBtn, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="paper-plane-outline" size={18} color="#9CA3AF" />
+        <Pressable style={({ pressed }) => [c.actionBtn, pressed && { opacity: 0.7 }]} onPress={onShare}>
+          <Ionicons name="paper-plane-outline" size={18} color={Colors.naturalGrey} />
         </Pressable>
       </View>
 
@@ -127,7 +140,10 @@ function PostCard({ item }: { item: typeof POSTS[number] }) {
 
 function InviteCard({ item }: { item: typeof INVITES[number] }) {
   return (
-    <View style={c.inviteCard}>
+    <Pressable
+      style={({ pressed }) => [c.inviteCard, pressed && { opacity: 0.96 }]}
+      onPress={() => router.push(`/venue/${item.venueId}`)}
+    >
       <View style={c.inviteHeader}>
         <View style={c.inviteAvatar}>
           <Text style={c.inviteAvatarText}>{item.host[0]}</Text>
@@ -154,39 +170,41 @@ function InviteCard({ item }: { item: typeof INVITES[number] }) {
           <Text style={c.inviteVenue}>{item.venueName}</Text>
           <Text style={c.inviteMeta}>{item.date} · {item.time} · {item.attendeeCount} going</Text>
         </View>
-        <ScaleBtn style={c.inviteViewBtn} pressedStyle={{ backgroundColor: '#2D4357' }}>
+        <ScaleBtn
+          style={c.inviteViewBtn}
+          pressedStyle={{ backgroundColor: '#2D4357' }}
+          onPress={() => router.push(`/venue/${item.venueId}`)}
+        >
           <Text style={c.inviteViewText}>View</Text>
         </ScaleBtn>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function FriendsScreen() {
+  const [sharePost, setSharePost] = useState<{ id: string } | null>(null);
+
   function renderItem({ item }: { item: FeedItem }) {
-    if (item.type === 'post')   return <PostCard   item={item.data as typeof POSTS[number]} />;
+    if (item.type === 'post')   return <PostCard   item={item.data as typeof POSTS[number]} onShare={() => setSharePost({ id: (item.data as typeof POSTS[number]).id })} />;
     if (item.type === 'invite') return <InviteCard item={item.data as typeof INVITES[number]} />;
     return null;
   }
 
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
-      {/* Header — same as explore */}
+      {/* Header */}
       <View style={s.header}>
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]} onPress={() => router.push('/modal')}>
-          <Ionicons name="add-circle-outline" size={26} color="#1A1A2E" />
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
+          <PlusSquare size={22} strokeWidth={1.75} color={Colors.black} />
         </Pressable>
 
-        <Image
-          source={require('../../assets/images/logo.png')}
-          style={s.logo}
-          resizeMode="contain"
-        />
+        <View style={{ flex: 1 }} />
 
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
-          <Ionicons name="chatbubble-outline" size={20} color="#1A1A2E" />
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]} onPress={() => router.push('/chat')}>
+          <MessageCircle size={22} strokeWidth={1.75} color={Colors.black} />
         </Pressable>
       </View>
 
@@ -195,12 +213,17 @@ export default function FriendsScreen() {
         keyExtractor={(item, i) => `${item.type}-${i}`}
         renderItem={renderItem}
         contentContainerStyle={s.list}
-        ItemSeparatorComponent={({ leadingItem, trailingItem }: any) =>
-          trailingItem?.type === 'invite'
-            ? null
-            : <View style={s.divider} />
+        ItemSeparatorComponent={({ trailingItem }: any) =>
+          trailingItem?.type === 'invite' ? null : <View style={s.divider} />
         }
         showsVerticalScrollIndicator={false}
+      />
+
+      <ShareSheet
+        visible={sharePost !== null}
+        onClose={() => setSharePost(null)}
+        type="post"
+        id={sharePost?.id ?? ''}
       />
     </SafeAreaView>
   );
@@ -209,37 +232,37 @@ export default function FriendsScreen() {
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const s = StyleSheet.create({
-  safe:      { flex: 1, backgroundColor: '#FFFFFF' },
+  safe:      { flex: 1, backgroundColor: Colors.screenBackground },
 
   // Header (matches explore)
   header:    { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-               paddingHorizontal: 20, paddingVertical: 12, backgroundColor: '#FFFFFF' },
+               paddingHorizontal: 20, height: 72, backgroundColor: Colors.screenBackground },
   headerBtn: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  logo:      { width: 48, height: 48 },
 
   list:    { paddingTop: 4, paddingBottom: 120 },
-  divider: { height: 1, backgroundColor: '#F0F0F0', marginHorizontal: 16, marginVertical: 8 },
+  divider: { height: 1, backgroundColor: Colors.divider, marginHorizontal: 16, marginVertical: 8 },
 });
 
 const c = StyleSheet.create({
   // ── Post card ──
   card:         { paddingHorizontal: 16, paddingVertical: 14, gap: 10 },
   topRow:     { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  authorRow:  { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
   avatar:     { width: 36, height: 36, borderRadius: 18, backgroundColor: '#E8F2F8',
                 alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 15, fontWeight: '600', color: '#375169' },
+  avatarText: { fontSize: 15, fontWeight: '600', color: Colors.deepSlate },
   nameBlock:  { flex: 1, gap: 2 },
-  authorName: { fontSize: 14, fontWeight: '500', color: '#1A1A1A' },
-  timestamp:  { fontSize: 12, color: '#9CA3AF' },
+  authorName: { fontSize: 14, fontWeight: '500', color: Colors.black },
+  timestamp:  { fontSize: 12, color: Colors.naturalGrey },
   venueRow:    { flexDirection: 'row', alignItems: 'center' },
-  venueLink:   { fontSize: 13, color: '#5BA8D3', fontWeight: '600' },
-  photo:        { width: '100%', height: 200, borderRadius: 12, backgroundColor: '#E3E4E6' },
-  caption:      { fontSize: 14, color: '#1A1A1A', lineHeight: 21 },
+  venueLink:   { fontSize: 13, color: Colors.primaryBlue, fontWeight: '600' },
+  photo:        { width: '100%', height: 200, borderRadius: 12, backgroundColor: Colors.lightGrey },
+  caption:      { fontSize: 14, color: Colors.black, lineHeight: 21 },
   actionsRow:   { flexDirection: 'row', alignItems: 'center', gap: 20 },
   actionBtn:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionCount:  { fontSize: 13, color: '#9CA3AF' },
+  actionCount:  { fontSize: 13, color: Colors.naturalGrey },
   hashtagRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  hashtag:      { fontSize: 13, color: '#5BA8D3' },
+  hashtag:      { fontSize: 13, color: Colors.primaryBlue },
 
   // ── Invite card ──
   inviteCard:          { backgroundColor: '#EBF5FB', borderRadius: 16, padding: 14, gap: 12,
@@ -247,22 +270,22 @@ const c = StyleSheet.create({
                          shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
                          shadowOpacity: 0.04, shadowRadius: 4, elevation: 1 },
   inviteHeader:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  inviteAvatar:        { width: 38, height: 38, borderRadius: 19, backgroundColor: '#5BA8D3',
+  inviteAvatar:        { width: 38, height: 38, borderRadius: 19, backgroundColor: Colors.primaryBlue,
                          alignItems: 'center', justifyContent: 'center' },
-  inviteAvatarText:    { fontSize: 16, fontWeight: '700', color: '#FFFFFF' },
-  inviteHeadline:      { fontSize: 14, color: '#375169' },
-  inviteName:          { fontWeight: '700', color: '#1A1A2E' },
+  inviteAvatarText:    { fontSize: 16, fontWeight: '700', color: Colors.white },
+  inviteHeadline:      { fontSize: 14, color: Colors.deepSlate },
+  inviteName:          { fontWeight: '700', color: Colors.black },
   inviteImageContainer:{ borderRadius: 12, overflow: 'hidden' },
-  inviteImage:         { width: '100%', height: 180, backgroundColor: '#B7D3E0' },
+  inviteImage:         { width: '100%', height: 180, backgroundColor: Colors.secondaryBlue },
   inviteTagsOverlay:   { position: 'absolute', top: 12, left: 12, flexDirection: 'row', gap: 6 },
   inviteTag:           { backgroundColor: 'rgba(26,26,46,0.68)', borderRadius: 999,
                          paddingHorizontal: 12, paddingVertical: 5 },
-  inviteTagText:       { fontSize: 12, fontWeight: '600', color: '#FFFFFF' },
+  inviteTagText:       { fontSize: 12, fontWeight: '600', color: Colors.white },
   inviteFooter:        { flexDirection: 'row', alignItems: 'center', gap: 10 },
   inviteFooterLeft:    { flex: 1, gap: 2 },
-  inviteVenue:         { fontSize: 14, fontWeight: '700', color: '#1A1A2E' },
-  inviteMeta:          { fontSize: 12, color: '#5BA8D3' },
+  inviteVenue:         { fontSize: 14, fontWeight: '700', color: Colors.black },
+  inviteMeta:          { fontSize: 12, color: Colors.primaryBlue },
   inviteViewBtn:       { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 10,
-                         backgroundColor: '#375169' },
-  inviteViewText:      { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
+                         backgroundColor: Colors.deepSlate },
+  inviteViewText:      { fontSize: 13, fontWeight: '600', color: Colors.white },
 });

@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import OnboardingHeader from '@/components/OnboardingHeader';
+import { Colors } from '@/constants/Colors';
 import { saveDraft } from '@/lib/store';
 
 const ITEMS = [
@@ -62,19 +63,19 @@ export default function ExperiencesScreen() {
 }
 
 const s = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: '#fff' },
+  safe:       { flex: 1, backgroundColor: Colors.white },
   content:    { padding: 24, paddingBottom: 8 },
-  heading:    { fontSize: 26, fontWeight: '700', color: '#1A1A2E', letterSpacing: -0.5, marginBottom: 6 },
-  sub:        { fontSize: 15, color: '#8B8F94', marginBottom: 28 },
+  heading:    { fontSize: 26, fontWeight: '700', color: Colors.black, letterSpacing: -0.5, marginBottom: 6 },
+  sub:        { fontSize: 15, color: Colors.naturalGrey, marginBottom: 28 },
   list:        { gap: 12 },
-  option:      { borderWidth: 1.5, borderColor: '#E3E4E6', borderRadius: 14,
-                 paddingVertical: 18, paddingHorizontal: 20, backgroundColor: '#fff' },
-  optionOn:    { borderColor: '#5BA8D3', backgroundColor: '#EBF5FB' },
-  optionText:  { fontSize: 16, fontWeight: '500', color: '#1A1A2E' },
-  optionTextOn:{ color: '#375169', fontWeight: '600' },
+  option:      { borderWidth: 1.5, borderColor: Colors.lightGrey, borderRadius: 14,
+                 paddingVertical: 18, paddingHorizontal: 20, backgroundColor: Colors.white },
+  optionOn:    { borderColor: Colors.primaryBlue, backgroundColor: '#EBF5FB' },
+  optionText:  { fontSize: 16, fontWeight: '500', color: Colors.black },
+  optionTextOn:{ color: Colors.deepSlate, fontWeight: '600' },
   footer:      { padding: 24, paddingTop: 8 },
   btn:         { borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
-  btnActive:   { backgroundColor: '#375169' },
+  btnActive:   { backgroundColor: Colors.deepSlate },
   btnInactive: { backgroundColor: '#A8D4EC' },
-  btnText:     { color: '#fff', fontSize: 16, fontWeight: '700' },
+  btnText:     { color: Colors.white, fontSize: 16, fontWeight: '700' },
 });
