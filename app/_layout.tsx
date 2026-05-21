@@ -1,4 +1,5 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { Figtree_400Regular, Figtree_600SemiBold, Figtree_600SemiBold_Italic, Figtree_700Bold } from '@expo-google-fonts/figtree';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
@@ -20,6 +21,10 @@ export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
+    Figtree_400Regular,
+    Figtree_600SemiBold,
+    Figtree_600SemiBold_Italic,
+    Figtree_700Bold,
   });
 
   useEffect(() => {
@@ -50,6 +55,13 @@ function RootLayoutNav() {
         <Stack.Screen name="modal"      options={{ presentation: 'modal' }} />
         <Stack.Screen name="chat"             options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="user-profile/[id]" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="settings"   options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="edit-profile"   options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="friends-list"   options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="planned-events" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="new-post"       options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
+        <Stack.Screen name="post-details"   options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="tag/[name]"     options={{ headerShown: false, animation: 'slide_from_right' }} />
       </Stack>
     </ThemeProvider>
   );

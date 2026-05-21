@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { View, StyleSheet, TextInput, KeyboardAvoidingView, Platform, Animated } from 'react-native';
 import { router } from 'expo-router';
 import { OnboardingLayout } from '@/components/OnboardingLayout';
 import { useOnboarding } from '@/lib/OnboardingContext';
@@ -9,8 +9,24 @@ export default function NameScreen() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [focusedField, setFocusedField] = useState<'first' | 'last' | null>(null);
+  const [lastNameVisible, setLastNameVisible] = useState(false);
+
+  const lastNameAnim = useRef(new Animated.Value(0)).current;
 
   const isValid = firstName.trim().length > 0 && lastName.trim().length > 0;
+
+  useEffect(() => {
+    if (firstName.length > 0 && !lastNameVisible) {
+      setLastNameVisible(true);
+      Animated.parallel([
+        Animated.timing(lastNameAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [firstName]);
 
   function handleContinue() {
     updateData({ name: { first: firstName, last: lastName } });
@@ -23,7 +39,7 @@ export default function NameScreen() {
       style={s.root}
     >
       <OnboardingLayout
-        progress={36}
+        progress={21}
         question="What's your name?"
         subtitle="This shows on your invites and plans."
         continueDisabled={!isValid}
@@ -39,15 +55,31 @@ export default function NameScreen() {
             onFocus={() => setFocusedField('first')}
             onBlur={() => setFocusedField(null)}
           />
-          <TextInput
-            style={[s.input, focusedField === 'last' && s.inputFocused]}
-            placeholder="Last name"
-            placeholderTextColor="#A0A4A8"
-            value={lastName}
-            onChangeText={setLastName}
-            onFocus={() => setFocusedField('last')}
-            onBlur={() => setFocusedField(null)}
-          />
+          {lastNameVisible && (
+            <Animated.View
+              style={{
+                opacity: lastNameAnim,
+                transform: [
+                  {
+                    translateY: lastNameAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20, 0],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <TextInput
+                style={[s.input, focusedField === 'last' && s.inputFocused]}
+                placeholder="Last name"
+                placeholderTextColor="#A0A4A8"
+                value={lastName}
+                onChangeText={setLastName}
+                onFocus={() => setFocusedField('last')}
+                onBlur={() => setFocusedField(null)}
+              />
+            </Animated.View>
+          )}
         </View>
       </OnboardingLayout>
     </KeyboardAvoidingView>

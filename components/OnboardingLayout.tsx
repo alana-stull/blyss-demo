@@ -1,5 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, StatusBar } from 'react-native';
+import React, { useRef, useEffect } from 'react';
+import { View, Text, StyleSheet, Pressable, StatusBar, Animated, Keyboard, TouchableWithoutFeedback } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -10,11 +10,13 @@ interface OnboardingLayoutProps {
   children: React.ReactNode;
   progress: number; // 0-100
   showBackArrow?: boolean;
-  question: string;
+  question?: string;
   subtitle?: string;
   continueDisabled?: boolean;
   onContinue?: () => void;
 }
+
+let _lastProgress = 0;
 
 export function OnboardingLayout({
   children,
@@ -25,7 +27,24 @@ export function OnboardingLayout({
   continueDisabled = false,
   onContinue,
 }: OnboardingLayoutProps) {
+  const animatedProgress = useRef(new Animated.Value(_lastProgress)).current;
+
+  useEffect(() => {
+    Animated.timing(animatedProgress, {
+      toValue: progress,
+      duration: 500,
+      useNativeDriver: false,
+    }).start();
+    _lastProgress = progress;
+  }, [progress]);
+
+  const animatedWidth = animatedProgress.interpolate({
+    inputRange: [0, 100],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
     <View style={s.root}>
       <StatusBar barStyle="dark-content" />
       <SafeAreaView style={s.safeArea} edges={['top']}>
@@ -45,22 +64,21 @@ export function OnboardingLayout({
           {/* Progress bar */}
           <View style={s.progressBarContainer}>
             <View style={s.progressBarBackground}>
-              <LinearGradient
-                colors={['#B7D3E0', '#4A7FA5']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[
-                  s.progressBarFilled,
-                  { width: `${progress}%` },
-                ]}
-              />
+              <Animated.View style={[s.progressBarFilled, { width: animatedWidth }]}>
+                <LinearGradient
+                  colors={['#B7D3E0', '#4A7FA5']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 0 }}
+                  style={StyleSheet.absoluteFill}
+                />
+              </Animated.View>
             </View>
           </View>
         </View>
 
         {/* Content area */}
         <View style={s.contentContainer}>
-          <Text style={s.question}>{question}</Text>
+          {question ? <Text style={s.question}>{question}</Text> : null}
           {subtitle && <Text style={s.subtitle}>{subtitle}</Text>}
           {children}
         </View>
@@ -87,6 +105,7 @@ export function OnboardingLayout({
         )}
       </SafeAreaView>
     </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -103,15 +122,15 @@ const s = StyleSheet.create({
   backBtn: { width: 24, height: 24 },
   progressBarContainer: { flex: 1 },
   progressBarBackground: {
-    height: 3,
-    borderRadius: 3,
+    height: 7,
+    borderRadius: 7,
     backgroundColor: '#E3E4E6',
     overflow: 'hidden',
   },
   progressBarFilled: {
     height: '100%',
-    borderRadius: 3,
-    backgroundColor: '#4A7FA5',
+    borderRadius: 7,
+    overflow: 'hidden',
   },
   contentContainer: {
     flex: 1,
@@ -119,15 +138,15 @@ const s = StyleSheet.create({
     paddingTop: 32,
   },
   question: {
-    fontSize: 22,
-    fontWeight: '600',
+    fontFamily: 'Figtree_600SemiBold',
+    fontSize: 24,
     color: '#333333',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: 16,
     color: '#8B8F94',
-    lineHeight: 19.5, // 13 * 1.5
+    lineHeight: 24,
     marginBottom: 28,
   },
   continueBtn: {

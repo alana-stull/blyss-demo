@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import {
   View, Text, FlatList, Image, Pressable, StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { useFocusEffect } from '@react-navigation/native';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { PlusSquare, MessageCircle } from 'lucide-react-native';
-import { MOCK_FRIENDS, MOCK_EVENTS, MOCK_JOURNAL } from '@/lib/store';
+import { MOCK_FRIENDS, MOCK_EVENTS, MOCK_JOURNAL, NEW_POST_QUEUE } from '@/lib/store';
 import { ScaleBtn } from '@/components/ScaleBtn';
 import { ShareSheet } from '@/components/ShareSheet';
 import { Colors } from '@/constants/Colors';
@@ -127,9 +128,14 @@ function PostCard({ item, onShare }: { item: typeof POSTS[number]; onShare: () =
       <Text style={c.caption}>{item.caption}</Text>
       {item.tags.length > 0 && (
         <View style={c.hashtagRow}>
-          {item.tags.map(t => (
-            <Text key={t} style={c.hashtag}>#{t.toLowerCase().replace(/\s+/g, '')}</Text>
-          ))}
+          {item.tags.map(t => {
+            const slug = t.toLowerCase().replace(/\W+/g, '');
+            return (
+              <Pressable key={t} onPress={() => router.push(`/tag/${slug}`)}>
+                <Text style={c.hashtag}>#{slug}</Text>
+              </Pressable>
+            );
+          })}
         </View>
       )}
     </View>
@@ -186,6 +192,20 @@ function InviteCard({ item }: { item: typeof INVITES[number] }) {
 
 export default function FriendsScreen() {
   const [sharePost, setSharePost] = useState<{ id: string } | null>(null);
+  const [feed, setFeed] = useState<FeedItem[]>(FEED);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (NEW_POST_QUEUE.length === 0) return;
+      setFeed(prev => {
+        const existing = new Set(prev.map(item => (item.data as any).id ?? ''));
+        const incoming: FeedItem[] = NEW_POST_QUEUE
+          .filter(p => !existing.has(p.id))
+          .map(p => ({ type: 'post' as const, data: p as typeof POSTS[number] }));
+        return incoming.length > 0 ? [...incoming, ...prev] : prev;
+      });
+    }, [])
+  );
 
   function renderItem({ item }: { item: FeedItem }) {
     if (item.type === 'post')   return <PostCard   item={item.data as typeof POSTS[number]} onShare={() => setSharePost({ id: (item.data as typeof POSTS[number]).id })} />;
@@ -197,7 +217,10 @@ export default function FriendsScreen() {
     <SafeAreaView style={s.safe} edges={['top']}>
       {/* Header */}
       <View style={s.header}>
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
+        <Pressable
+          style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => router.push('/new-post')}
+        >
           <PlusSquare size={22} strokeWidth={1.75} color={Colors.black} />
         </Pressable>
 
@@ -209,8 +232,8 @@ export default function FriendsScreen() {
       </View>
 
       <FlatList
-        data={FEED}
-        keyExtractor={(item, i) => `${item.type}-${i}`}
+        data={feed}
+        keyExtractor={(item, i) => `${item.type}-${(item.data as any).id ?? i}`}
         renderItem={renderItem}
         contentContainerStyle={s.list}
         ItemSeparatorComponent={({ trailingItem }: any) =>

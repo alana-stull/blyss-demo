@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, StyleSheet, Pressable, Text, Image } from 'react-native';
+import { View, StyleSheet, Pressable, Text, Image, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useOnboarding } from '@/lib/OnboardingContext';
@@ -21,97 +22,109 @@ export default function CompleteScreen() {
   }
 
   return (
-    <SafeAreaView style={s.root} edges={['top', 'bottom']}>
-      <View style={s.content}>
-        <View style={s.centeredContent}>
-          <Image
-            source={require('../../assets/images/logo.png')}
-            style={s.logo}
-            resizeMode="contain"
-          />
-          <Text style={s.heading}>You're all set, {data.name?.first || 'there'}!</Text>
-          <Text style={s.subtitle}>Turn your intentions into plans.</Text>
-        </View>
+    <LinearGradient
+      colors={['#4A90C4', '#3B72A8', '#162D55']}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0.4, y: 1 }}
+      style={s.root}
+    >
+      <StatusBar barStyle="light-content" />
+      <SafeAreaView style={s.safeArea} edges={['top', 'bottom']}>
+        <View style={s.content}>
+          <View style={s.centeredContent}>
+            <Image
+              source={require('../../assets/images/logo.png')}
+              style={s.logo}
+              resizeMode="contain"
+              tintColor="white"
+            />
+            <Text style={s.heading}>
+              You're all set, {data.name?.first || 'there'}!
+            </Text>
+            <Text style={s.subtitle}>Turn your intentions into plans.</Text>
+          </View>
 
-        <View style={s.buttonContainer}>
-          <Pressable
-            style={s.primaryBtn}
-            onPress={handleCreatePlan}
-          >
-            <Text style={s.primaryBtnText}>Create your first plan</Text>
-          </Pressable>
+          <View style={s.buttonContainer}>
+            <Pressable
+              style={({ pressed }) => [s.exploreBtn, pressed && { opacity: 0.9 }]}
+              onPress={handleExplore}
+            >
+              <Text style={s.exploreBtnText}>Explore nearby</Text>
+            </Pressable>
 
-          <Pressable
-            style={s.secondaryBtn}
-            onPress={handleExplore}
-          >
-            <Text style={s.secondaryBtnText}>Explore nearby</Text>
-          </Pressable>
+            <Pressable
+              style={({ pressed }) => [s.createBtn, pressed && { opacity: 0.85 }]}
+              onPress={handleCreatePlan}
+            >
+              <Text style={s.createBtnText}>Create your first plan</Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const s = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: '#F9FBFC',
-  },
+  root: { flex: 1 },
+  safeArea: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingBottom: 36,
+    paddingBottom: 48,
+    paddingTop: 24,
   },
   centeredContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
+    gap: 14,
   },
   logo: {
     width: 80,
     height: 80,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   heading: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#333333',
+    fontFamily: 'Figtree_700Bold',
+    fontSize: 30,
+    color: '#FFFFFF',
     textAlign: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#8B8F94',
+    fontFamily: 'Figtree_600SemiBold_Italic',
+    fontSize: 18,
+    color: '#FFFFFF',
     textAlign: 'center',
+    letterSpacing: 0.3,
   },
   buttonContainer: {
     gap: 12,
   },
-  secondaryBtn: {
+  exploreBtn: {
     height: 52,
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#375169',
     borderRadius: 10,
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryBtnText: {
+  exploreBtnText: {
     fontSize: 15,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#375169',
   },
-  primaryBtn: {
+  createBtn: {
     height: 52,
-    backgroundColor: '#375169',
     borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.35)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryBtnText: {
+  createBtnText: {
     fontSize: 15,
     fontWeight: '500',
-    color: 'white',
+    color: '#FFFFFF',
   },
 });

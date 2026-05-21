@@ -19,5 +19,5 @@ export default function Index() {
 
   if (!ready) return <View style={{ flex: 1, backgroundColor: Colors.white }} />;
   if (complete) return <Redirect href="/(tabs)/explore" />;
-  return <Redirect href="/onboarding/name" />;
+  return <Redirect href="/onboarding" />;
 }

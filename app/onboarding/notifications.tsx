@@ -22,7 +22,7 @@ export default function NotificationsScreen() {
 
   return (
     <OnboardingLayout
-      progress={93}
+      progress={100}
       question="Stay in the loop."
       subtitle="Get notified when friends RSVP, plans are confirmed, and reminders before events."
     >

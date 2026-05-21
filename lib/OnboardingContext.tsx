@@ -9,6 +9,7 @@ export interface OnboardingData {
   vibe?: string[];
   budget?: 'under20' | '20to40' | '40to75';
   calendarConnected?: string[];
+  availability?: string[];
   notificationsEnabled?: boolean;
   friendsAdded?: string[];
 }

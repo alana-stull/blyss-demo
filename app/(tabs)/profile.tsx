@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, Pressable, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
@@ -11,6 +11,7 @@ import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
 import { EVENTS, getAcceptedEventIds } from '@/lib/events';
 import type { UserProfile } from '@/lib/store';
+import * as ImagePicker from 'expo-image-picker';
 
 type SavedVenue = {
   id: string; name: string; category: string; location: string;
@@ -28,12 +29,6 @@ const EVENT_TEMPLATES = [
   { suffix: 'Happy Hour',       dateLabel: 'Thu, Feb 13 · 6:00 PM', attending: ['Maya', 'Jordan'] },
 ];
 
-const ATTENDEE_COLORS = [
-  { bg: '#9FE1CB', fg: '#085041' },
-  { bg: '#F5C4B3', fg: '#712B13' },
-  { bg: '#C5D4E0', fg: '#2C4A5E' },
-  { bg: '#D4C5E2', fg: '#4A2C6E' },
-];
 
 function parseEventDate(dateLabel: string) {
   const [left, time] = dateLabel.split(' · ');
@@ -91,7 +86,7 @@ function SavedVenueRow({ item }: { item: SavedVenue }) {
 function EventCard({ item }: { item: ReturnType<typeof buildProfileEvents>[0] }) {
   const { month, day, dow, time } = item.parsed;
   return (
-    <Pressable style={({ pressed }) => [s.eventCard, pressed && { opacity: 0.92 }]} onPress={() => router.push(`/venue/${item.venueId}`)}>
+    <Pressable style={({ pressed }) => [s.eventCard, pressed && { opacity: 0.92 }]} onPress={() => router.push({ pathname: '/event-detail', params: { id: item.id } })}>
       <View style={s.dateBlock}>
         <Text style={s.dateMonth}>{month.toUpperCase()}</Text>
         <Text style={s.dateDay}>{day}</Text>
@@ -108,14 +103,11 @@ function EventCard({ item }: { item: ReturnType<typeof buildProfileEvents>[0] })
           <Text style={s.eventMeta}>{time}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8 }}>
-          {item.attending.slice(0, 3).map((name, i) => {
-            const col = ATTENDEE_COLORS[i % ATTENDEE_COLORS.length];
-            return (
-              <View key={i} style={[s.attendeeCircle, { backgroundColor: col.bg, marginLeft: i > 0 ? -5 : 0, zIndex: 5 - i }]}>
-                <Text style={[s.attendeeInitial, { color: col.fg }]}>{name[0]}</Text>
-              </View>
-            );
-          })}
+          {item.attending.slice(0, 3).map((name, i) => (
+            <View key={i} style={[s.attendeeCircle, { marginLeft: i > 0 ? -5 : 0, zIndex: 5 - i }]}>
+              <Text style={s.attendeeInitial}>{name[0]}</Text>
+            </View>
+          ))}
           <Text style={[s.eventMeta, { marginLeft: 6 }]}>
             {item.attending.length === 1 ? `${item.attending[0]}'s event` : `${item.attending.length} going`}
           </Text>
@@ -131,6 +123,7 @@ export default function ProfileScreen() {
   const [profile,      setProfile]      = useState<UserProfile | null>(null);
   const [tab,          setTab]          = useState<Tab>('events');
   const [savedVenues,  setSavedVenues]  = useState<SavedVenue[]>([]);
+  const [profilePic,   setProfilePic]   = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -140,6 +133,18 @@ export default function ProfileScreen() {
       });
     }, [])
   );
+
+  async function handlePickImage() {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setProfilePic(result.assets[0].uri);
+    }
+  }
 
   const firstName = profile?.first_name ?? 'Alana';
   const lastName  = profile?.last_name  ?? 'Stull';
@@ -151,39 +156,46 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView style={s.safe} edges={['top']}>
       <View style={s.header}>
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]} onPress={() => router.push('/onboarding/interests')}>
+        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]} onPress={() => router.push('/edit-profile')}>
           <Pencil size={17} strokeWidth={2} color={Colors.black} />
         </Pressable>
         <View style={{ flex: 1 }} />
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
+      <Pressable
+        style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}
+        onPress={() => router.push('/settings')}
+      >
           <Settings size={20} strokeWidth={1.5} color={Colors.black} />
         </Pressable>
       </View>
 
       {/* ── Avatar + identity (static) ── */}
       <View style={s.heroSection}>
-        <View style={s.avatarWrap}>
+        <Pressable style={s.avatarWrap} onPress={handlePickImage}>
           <View style={s.avatar}>
-            <Text style={s.initials}>{initials}</Text>
+            {profilePic ? (
+              <Image source={{ uri: profilePic }} style={{ width: '100%', height: '100%', borderRadius: 52 }} />
+            ) : (
+              <Text style={s.initials}>{initials}</Text>
+            )}
           </View>
-        </View>
+        </Pressable>
 
         <Text style={s.displayName}>{firstName} {lastName}</Text>
-        <Text style={s.subLine}>{city}</Text>
+        <Text style={s.subLine}>{city}, NC</Text>
 
         <View style={s.statsRow}>
-          <View style={s.stat}>
+          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push({ pathname: '/friends-list', params: { tab: 'friends' } })}>
             <Text style={s.statNum}>142</Text>
             <Text style={s.statLabel}>Friends</Text>
-          </View>
-          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push('/journal')}>
+          </Pressable>
+          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push({ pathname: '/friends-list', params: { tab: 'planned' } })}>
             <Text style={s.statNum}>24</Text>
             <Text style={s.statLabel}>Planned</Text>
           </Pressable>
-          <View style={s.stat}>
+          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push({ pathname: '/friends-list', params: { tab: 'attended' } })}>
             <Text style={s.statNum}>87</Text>
             <Text style={s.statLabel}>Attended</Text>
-          </View>
+          </Pressable>
         </View>
       </View>
 
@@ -241,28 +253,28 @@ const s = StyleSheet.create({
   // Hero
   heroSection: {
     alignItems: 'center',
-    paddingTop: 16,
+    paddingTop: 4,
     paddingBottom: 16,
     paddingHorizontal: 20,
     backgroundColor: Colors.screenBackground,
   },
   avatarWrap: { marginBottom: 14 },
   avatar: {
-    width: 86, height: 86, borderRadius: 43,
+    width: 104, height: 104, borderRadius: 52,
     backgroundColor: '#EBF5FB', borderWidth: 3, borderColor: Colors.white,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.10, shadowRadius: 8, elevation: 4,
   },
-  initials:    { fontSize: 24, fontWeight: '800', color: Colors.deepSlate },
-  displayName: { fontSize: 17, fontWeight: '700', color: Colors.black, letterSpacing: -0.3, marginBottom: 6 },
-  subLine:     { fontSize: 13, color: Colors.naturalGrey, marginBottom: 20 },
+  initials:    { fontSize: 32, fontWeight: '800', color: Colors.deepSlate },
+  displayName: { fontSize: 22, fontWeight: '600', color: Colors.black, letterSpacing: -0.5, marginBottom: 4 },
+  subLine:     { fontSize: 15, color: Colors.naturalGrey, marginBottom: 24 },
 
   // Stats
   statsRow:  { flexDirection: 'row', gap: 28, marginBottom: 0 },
   stat:      { alignItems: 'center', gap: 1 },
-  statNum:   { fontSize: 17, fontWeight: '800', color: Colors.black, letterSpacing: -0.4 },
-  statLabel: { fontSize: 11, color: Colors.naturalGrey, fontWeight: '500' },
+  statNum:   { fontSize: 20, fontWeight: '700', color: Colors.black, letterSpacing: -0.4 },
+  statLabel: { fontSize: 13, color: Colors.naturalGrey, fontWeight: '500' },
 
   // Tabs
   tabBar: {
@@ -295,14 +307,15 @@ const s = StyleSheet.create({
   dateDay:   { fontSize: 22, fontWeight: '600', color: '#375169', lineHeight: 26 },
   dateDow:   { fontSize: 9, fontWeight: '500', color: '#8B8F94', letterSpacing: 0.5 },
   divider:   { width: 1, alignSelf: 'stretch', backgroundColor: '#E3E4E6' },
-  eventTitle: { fontSize: 13.5, fontWeight: '600', color: '#333333' },
+  eventTitle: { fontSize: 15, fontWeight: '700', color: '#333333' },
   eventMeta:  { fontSize: 11.5, color: '#8B8F94', flexShrink: 1 },
   attendeeCircle: {
-    width: 34, height: 34, borderRadius: 17,
+    width: 26, height: 26, borderRadius: 13,
+    backgroundColor: '#E8F0F5',
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 1.5, borderColor: Colors.white,
   },
-  attendeeInitial: { fontSize: 13, fontWeight: '700' },
+  attendeeInitial: { fontSize: 11, fontWeight: '700', color: Colors.primaryBlue },
 
   // Saved card
   savedCard: {

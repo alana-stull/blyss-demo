@@ -53,7 +53,7 @@ export default function OTPScreen() {
 
   return (
     <OnboardingLayout
-      progress={27}
+      progress={14}
       question="Enter your code."
       subtitle={data.phone ? `Sent to ${data.phone}.` : "Sent to your phone."}
       continueDisabled={!isValid}

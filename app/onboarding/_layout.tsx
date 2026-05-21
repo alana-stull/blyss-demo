@@ -4,7 +4,7 @@ import { OnboardingProvider } from '@/lib/OnboardingContext';
 export default function OnboardingLayout() {
   return (
     <OnboardingProvider>
-      <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }} />
+      <Stack screenOptions={{ headerShown: false, animation: 'none' }} />
     </OnboardingProvider>
   );
 }

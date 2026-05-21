@@ -29,7 +29,7 @@ export default function PhoneScreen() {
       style={s.root}
     >
       <OnboardingLayout
-        progress={18}
+        progress={7}
         question="What's your number?"
         subtitle="We protect our community by ensuring everyone on Blyss is real."
         continueDisabled={!isValid}
@@ -48,7 +48,7 @@ export default function PhoneScreen() {
             keyboardType="phone-pad"
             value={formatPhone(phone)}
             onChangeText={setPhone}
-            maxLength={14}
+            maxLength={16}
           />
         </View>
       </OnboardingLayout>

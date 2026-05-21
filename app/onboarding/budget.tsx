@@ -28,7 +28,7 @@ export default function BudgetScreen() {
 
   return (
     <OnboardingLayout
-      progress={73}
+      progress={79}
       question="What's your usual budget?"
       subtitle="This helps us recommend plans you'll love."
       continueDisabled={!selected}

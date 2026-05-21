@@ -67,9 +67,13 @@ export default function ExploreScreen() {
 
           <View style={c.tags}>
             {v.tags.map(t => (
-              <View key={t} style={c.tag}>
+              <Pressable
+                key={t}
+                style={({ pressed }) => [c.tag, pressed && { opacity: 0.7 }]}
+                onPress={() => router.push(`/tag/${t.toLowerCase().replace(/\W+/g, '')}`)}
+              >
                 <Text style={c.tagText}>{t}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 
@@ -89,7 +93,10 @@ export default function ExploreScreen() {
     <SafeAreaView style={s.safe} edges={['top']}>
       {/* Header */}
       <View style={s.header}>
-        <Pressable style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}>
+        <Pressable
+          style={({ pressed }) => [s.headerBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => router.push({ pathname: '/(tabs)/plan', params: { new: String(Date.now()) } })}
+        >
           <CalendarPlus size={22} strokeWidth={1.75} color={Colors.black} />
         </Pressable>
 

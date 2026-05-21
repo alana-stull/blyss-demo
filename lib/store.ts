@@ -239,3 +239,33 @@ export const MOCK_EVENTS = [
   { id: 'e1', name: 'Warehouse night',   venue: 'Motorco Music Hall', venue_id: 'V013', date: 'Fri Apr 11', time: '9:00 PM',  attendees: ['Maya R.', 'Alex T.', 'Sam L.'], status: 'confirmed' },
   { id: 'e2', name: 'Sunday brunch run', venue: 'Scratch Bakery',     venue_id: 'V004', date: 'Sun Apr 13', time: '10:30 AM', attendees: ['Priya S.', 'Jordan K.'],         status: 'planning'  },
 ];
+
+// ─── In-app post queue ────────────────────────────────────────────────────────
+
+export type FeedPost = {
+  id: string;
+  image: string;
+  venue: string;
+  venueId: string;
+  author: string;
+  caption: string;
+  tags: string[];
+  likes: number;
+  comments: number;
+  time: string;
+};
+
+export const NEW_POST_QUEUE: FeedPost[] = [];
+
+export function pushPost(data: {
+  image: string;
+  venue: string;
+  venueId: string;
+  author: string;
+  caption: string;
+  tags: string[];
+}): FeedPost {
+  const post: FeedPost = { ...data, id: `np-${Date.now()}`, likes: 0, comments: 0, time: 'Just now' };
+  NEW_POST_QUEUE.unshift(post);
+  return post;
+}

@@ -170,9 +170,13 @@ export default function VenueScreen() {
           {/* Tags */}
           <View style={s.tags}>
             {venue.tags.map(tag => (
-              <View key={tag} style={s.tag}>
+              <Pressable
+                key={tag}
+                style={({ pressed }) => [s.tag, pressed && { opacity: 0.7 }]}
+                onPress={() => router.push(`/tag/${tag.toLowerCase().replace(/\W+/g, '')}`)}
+              >
                 <Text style={s.tagText}>{tag}</Text>
-              </View>
+              </Pressable>
             ))}
           </View>
 

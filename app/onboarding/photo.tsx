@@ -27,14 +27,14 @@ export default function PhotoScreen() {
 
   function handleContinue() {
     updateData({ photo: photo || undefined });
-    router.push('/onboarding/interests');
+    router.push('/onboarding/splash');
   }
 
   const isValid = photo !== null || skipped;
 
   return (
     <OnboardingLayout
-      progress={52}
+      progress={36}
       question="Add a profile photo."
       subtitle="Friends are 3x more likely to RSVP when they can see who's hosting."
       continueDisabled={!isValid}

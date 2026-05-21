@@ -1,111 +1,126 @@
 import React, { useState } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { router } from 'expo-router';
-import { Calendar } from 'lucide-react-native';
+import { Sunrise, Sun, Sunset, Moon } from 'lucide-react-native';
 import { OnboardingLayout } from '@/components/OnboardingLayout';
 import { useOnboarding } from '@/lib/OnboardingContext';
 
+const COLUMNS = ['Weekdays', 'Saturdays', 'Sundays'];
+
+const ROWS: { key: string; Icon: React.ComponentType<{ size: number; color: string; strokeWidth: number }> }[] = [
+  { key: 'Morning',   Icon: Sunrise },
+  { key: 'Afternoon', Icon: Sun     },
+  { key: 'Evening',   Icon: Sunset  },
+  { key: 'Late night', Icon: Moon   },
+];
+
+function cellKey(col: string, row: string) {
+  return `${col}-${row}`;
+}
+
 export default function CalendarScreen() {
   const { updateData } = useOnboarding();
-  const [connected, setConnected] = useState<string[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  function toggleCalendar(cal: string) {
-    if (connected.includes(cal)) {
-      setConnected(connected.filter(c => c !== cal));
+  function toggleCell(col: string, row: string) {
+    const k = cellKey(col, row);
+    const next = new Set(selected);
+    if (next.has(k)) next.delete(k); else next.add(k);
+    setSelected(next);
+  }
+
+  function toggleColumn(col: string) {
+    const colKeys = ROWS.map(({ key: k }) => cellKey(col, k));
+    const allOn = colKeys.every(k => selected.has(k));
+    const next = new Set(selected);
+    if (allOn) {
+      colKeys.forEach(k => next.delete(k));
     } else {
-      setConnected([...connected, cal]);
+      colKeys.forEach(k => next.add(k));
     }
+    setSelected(next);
   }
 
   function handleContinue() {
-    updateData({ calendarConnected: connected });
+    updateData({ availability: Array.from(selected) });
     router.push('/onboarding/friends');
   }
-
-  function handleSkip() {
-    router.push('/onboarding/friends');
-  }
-
-  const hasConnected = connected.length > 0;
 
   return (
     <OnboardingLayout
-      progress={80}
-      question="Sync your calendar."
-      subtitle="See when friends are free and plan around your existing schedule."
-      continueDisabled={!hasConnected}
-      onContinue={hasConnected ? handleContinue : undefined}
+      progress={86}
+      question="When are you usually free?"
+      subtitle="We'll suggest plans at the right times."
+      onContinue={handleContinue}
     >
-      <View style={s.container}>
-        {['Connect Google Calendar', 'Connect Apple Calendar'].map((cal, idx) => {
-          const isConnected = connected.includes(cal);
-          return (
-            <Pressable
-              key={idx}
-              style={[
-                s.button,
-                isConnected && s.buttonConnected,
-              ]}
-              onPress={() => toggleCalendar(cal)}
-            >
-              <Calendar size={20} color={isConnected ? '#4A7FA5' : '#8B8F94'} strokeWidth={1.5} />
-              <Text
-                style={[
-                  s.buttonText,
-                  isConnected && s.buttonTextConnected,
-                ]}
-              >
-                {isConnected ? `${cal.replace('Connect ', '')} Connected ✓` : cal}
-              </Text>
-            </Pressable>
-          );
-        })}
+      <View style={s.grid}>
+        {/* Column headers */}
+        <View style={s.row}>
+          <View style={s.rowLabel} />
+          {COLUMNS.map(col => {
+            return (
+              <Pressable key={col} style={s.colHeader} onPress={() => toggleColumn(col)}>
+                <Text style={s.colHeaderText}>{col}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-        {!hasConnected && (
-          <Pressable style={s.skipLink} onPress={handleSkip}>
-            <Text style={s.skipText}>Skip for now</Text>
-          </Pressable>
-        )}
+        {/* Data rows */}
+        {ROWS.map(({ key: rowKey, Icon }) => (
+          <View key={rowKey} style={s.row}>
+            <View style={s.rowLabel}>
+              <Icon size={18} color="#8B8F94" strokeWidth={1.5} />
+            </View>
+            {COLUMNS.map(col => {
+              const on = selected.has(cellKey(col, rowKey));
+              return (
+                <Pressable
+                  key={col}
+                  style={[s.cell, on && s.cellSelected]}
+                  onPress={() => toggleCell(col, rowKey)}
+                />
+              );
+            })}
+          </View>
+        ))}
       </View>
     </OnboardingLayout>
   );
 }
 
 const s = StyleSheet.create({
-  container: {
-    gap: 12,
-    marginTop: 8,
+  grid: {
+    marginTop: 16,
+    gap: 8,
   },
-  button: {
-    height: 56,
-    borderWidth: 1,
-    borderColor: '#E3E4E6',
-    borderRadius: 10,
-    paddingHorizontal: 14,
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: 'white',
+    gap: 6,
   },
-  buttonConnected: {
-    backgroundColor: '#E8F2F8',
-    borderColor: '#4A7FA5',
-  },
-  buttonText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#333333',
-  },
-  buttonTextConnected: {
-    color: '#4A7FA5',
-  },
-  skipLink: {
-    marginTop: 16,
+  rowLabel: {
+    width: 36,
     alignItems: 'center',
   },
-  skipText: {
-    fontSize: 14,
-    color: '#8B8F94',
-    fontWeight: '500',
+  colHeader: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  colHeaderText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
+  },
+  cell: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#EBEBEC',
+  },
+  cellSelected: {
+    backgroundColor: '#4A7FA5',
   },
 });

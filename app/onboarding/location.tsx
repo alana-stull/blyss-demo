@@ -56,7 +56,7 @@ export default function LocationScreen() {
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={s.root}>
       <OnboardingLayout
-        progress={45}
+        progress={29}
         question="Where are you based?"
         subtitle="We'll show you venues and plans near you."
         continueDisabled={!selected}

@@ -32,7 +32,7 @@ export default function FriendsScreen() {
 
   return (
     <OnboardingLayout
-      progress={87}
+      progress={93}
       question="Find your friends."
       subtitle="See who's already on Blyss."
       continueDisabled={false}
