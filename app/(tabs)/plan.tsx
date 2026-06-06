@@ -199,11 +199,11 @@ function OptionRow({
 // ─── Envelope preview ────────────────────────────────────────────────────────
 
 function EnvelopePreview({
-  envelopeColor, cardColor, title, venue, timeSlotId, friendIds, privacy, tabBarHeight, onSend, onEdit, cardStyle
+  envelopeColor, cardColor, title, venue, timeSlotId, friendIds, privacy, tabBarHeight, onSend, onEdit, cardStyle, description
 }: {
   envelopeColor: string; cardColor: string; title: string; venue: Venue | null; timeSlotId: string;
   friendIds: string[]; privacy: string; tabBarHeight: number;
-  onSend: () => void; onEdit: () => void; cardStyle: 'minimal' | 'bold' | 'photo';
+  onSend: () => void; onEdit: () => void; cardStyle: 'minimal' | 'bold' | 'photo'; description?: string;
 }) {
   const [tapped, setTapped] = useState(false);
   const cardAnim = useSharedValue(0);
@@ -254,6 +254,7 @@ function EnvelopePreview({
               slot={slot}
               friends={friendIds}
               privacy={privacy}
+              description={description}
             />
           </ReAnimated.View>
 
@@ -412,23 +413,50 @@ interface InvitePreviewCardProps {
   slot: TimeSlot | undefined;
   friends: string[];
   privacy: string;
+  description?: string;
 }
 
-const InvitePreviewCard = ({ cardStyle, envelopeColor, cardColor, title, venue, slot, friends, privacy }: InvitePreviewCardProps) => {
+const InvitePreviewCard = ({ cardStyle, envelopeColor, cardColor, title, venue, slot, friends, privacy, description }: InvitePreviewCardProps) => {
   const isLightCard = ['#FFFFFF', '#FCFCFC', '#F9F9FA', '#E8F2F8', '#F2C05A'].includes(cardColor);
   const onDark = !isLightCard;
+
+  const invitedFriends = MOCK_INVITE_FRIENDS.filter(f => friends.includes(f.id));
+  function FriendsRow({ borderColor }: { textColor: string; borderColor: string }) {
+    if (friends.length === 0 || privacy !== 'private') return null;
+    return (
+      <View style={{ flexDirection: 'row' }}>
+        {invitedFriends.slice(0, 3).map((f, i) => (
+          <View
+            key={f.id}
+            style={{
+              width: 28, height: 28, borderRadius: 14,
+              backgroundColor: '#4A7FA5',
+              alignItems: 'center', justifyContent: 'center',
+              marginLeft: i > 0 ? -8 : 0,
+              borderWidth: 1.5, borderColor,
+            }}
+          >
+            <Text style={{ fontSize: 8, fontWeight: '700', color: '#FFFFFF' }}>{f.initials}</Text>
+          </View>
+        ))}
+      </View>
+    );
+  }
 
   if (cardStyle === 'bold') {
     return (
       <View style={[previewStyles.previewCard, { backgroundColor: cardColor, borderWidth: 0, shadowColor: cardColor }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.85)' : '#4A4A4A' }]}>{venue?.name ?? 'Your Venue'}</Text>
+            {slot && <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.85)' : '#4A4A4A' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
+          </View>
+          <FriendsRow textColor="" borderColor={onDark ? cardColor : '#FFFFFF'} />
+        </View>
         <Text style={[previewStyles.previewTitle, { color: onDark ? '#FFFFFF' : '#1A1A1A' }]}>
           {title || 'Your Plan'}
         </Text>
-        <View style={{ gap: 4, marginTop: 8 }}>
-          <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.85)' : '#4A4A4A' }]}>{venue?.name ?? 'Your Venue'}</Text>
-          {slot && <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.85)' : '#4A4A4A' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
-          {friends.length > 0 && privacy === 'private' && <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.65)' : '#666666', marginTop: 4 }]}>{friends.length} friend{friends.length !== 1 ? 's' : ''} invited</Text>}
-        </View>
+        {!!description && <Text style={[previewStyles.previewSub, { color: onDark ? 'rgba(255,255,255,0.75)' : '#555555', marginTop: 6 }]}>{description}</Text>}
       </View>
     );
   }
@@ -439,14 +467,17 @@ const InvitePreviewCard = ({ cardStyle, envelopeColor, cardColor, title, venue, 
         {venue?.image ? <Image source={{ uri: venue.image }} style={StyleSheet.absoluteFill} resizeMode="cover" /> : <View style={[StyleSheet.absoluteFill, { backgroundColor: '#EAEAEA' }]} />}
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.45)' }]} />
         <View style={[previewStyles.previewPhotoInner, { padding: 20, justifyContent: 'flex-end', height: '100%' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+            <View style={{ flex: 1, gap: 2 }}>
+              <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.9)' }]}>{venue?.name ?? 'Your Venue'}</Text>
+              {slot && <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.9)' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
+            </View>
+            <FriendsRow textColor="" borderColor="transparent" />
+          </View>
           <Text style={[previewStyles.previewTitle, { color: '#FFFFFF' }]}>
             {title || 'Your Plan'}
           </Text>
-          <View style={{ gap: 4, marginTop: 8 }}>
-            <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.9)' }]}>{venue?.name ?? 'Your Venue'}</Text>
-            {slot && <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.9)' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
-            {friends.length > 0 && privacy === 'private' && <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.7)' }]}>{friends.length} friend{friends.length !== 1 ? 's' : ''} invited</Text>}
-          </View>
+          {!!description && <Text style={[previewStyles.previewSub, { color: 'rgba(255,255,255,0.75)', marginTop: 6 }]}>{description}</Text>}
         </View>
       </View>
     );
@@ -454,14 +485,17 @@ const InvitePreviewCard = ({ cardStyle, envelopeColor, cardColor, title, venue, 
 
   return (
     <View style={[previewStyles.previewCard, { backgroundColor: cardColor, borderWidth: 1, borderColor: '#F0F0F0', padding: 24 }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 10 }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text style={[previewStyles.previewSub, { color: onDark ? '#EBEBEB' : '#555555' }]}>{venue?.name ?? 'Your Venue'}</Text>
+          {slot && <Text style={[previewStyles.previewSub, { color: onDark ? '#EBEBEB' : '#555555' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
+        </View>
+        <FriendsRow textColor={onDark ? '#C0C0C0' : '#888888'} borderColor={onDark ? cardColor : '#FFFFFF'} />
+      </View>
       <Text style={[previewStyles.previewTitle, { color: onDark ? '#FFFFFF' : '#1A1A1A' }]}>
         {title || 'Your Plan'}
       </Text>
-      <View style={{ gap: 4, marginTop: 12 }}>
-        <Text style={[previewStyles.previewSub, { color: onDark ? '#EBEBEB' : '#555555' }]}>{venue?.name ?? 'Your Venue'}</Text>
-        {slot && <Text style={[previewStyles.previewSub, { color: onDark ? '#EBEBEB' : '#555555' }]}>{slot.day}, {slot.date} · {slot.time}</Text>}
-        {friends.length > 0 && privacy === 'private' && <Text style={[previewStyles.previewSub, { color: onDark ? '#C0C0C0' : '#888888', marginTop: 6 }]}>{friends.length} friend{friends.length !== 1 ? 's' : ''} invited</Text>}
-      </View>
+      {!!description && <Text style={[previewStyles.previewSub, { color: onDark ? '#D0D0D0' : '#666666', marginTop: 6 }]}>{description}</Text>}
     </View>
   );
 };
@@ -1000,7 +1034,7 @@ const renderCardDesign = () => {
           Design your invite
         </Text>
         
-        <InvitePreviewCard 
+        <InvitePreviewCard
           cardStyle={cardStyle}
           envelopeColor={envelopeColor}
           cardColor={cardColor}
@@ -1009,6 +1043,7 @@ const renderCardDesign = () => {
           slot={slot}
           friends={friends}
           privacy={privacy}
+          description={desc}
         />
 
         <Text style={[s.customRowLabel, { textTransform: 'uppercase', letterSpacing: 1, fontSize: 12, color: '#8E8E93', marginTop: 32, marginBottom: 12 }]}>
@@ -1116,6 +1151,7 @@ const renderCardDesign = () => {
       onSend={() => setStep(10)}
       onEdit={() => setStep(8)}
       cardStyle={cardStyle}
+      description={desc}
     />
   );
 
@@ -1134,7 +1170,7 @@ const renderCardDesign = () => {
           <View style={{ alignItems: 'center', marginBottom: 24, marginTop: 8 }}>
             <View style={[ep.sleeveContainer, { backgroundColor: '#F9F9FA' }]}>
               <View style={ep.animatedCardWrapper}>
-                <InvitePreviewCard 
+                <InvitePreviewCard
                   cardStyle={cardStyle}
                   envelopeColor={envelopeColor}
                   cardColor={cardColor}
@@ -1143,6 +1179,7 @@ const renderCardDesign = () => {
                   slot={slot}
                   friends={friends}
                   privacy={privacy}
+                  description={desc}
                 />
               </View>
               <View style={[ep.pocketBack, { backgroundColor: envelopeColor }]} />

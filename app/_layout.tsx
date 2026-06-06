@@ -59,6 +59,7 @@ function RootLayoutNav() {
         <Stack.Screen name="edit-profile"   options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="friends-list"   options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="planned-events" options={{ headerShown: false, animation: 'slide_from_right' }} />
+        <Stack.Screen name="attended"       options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="new-post"       options={{ headerShown: false, animation: 'slide_from_bottom', presentation: 'fullScreenModal' }} />
         <Stack.Screen name="post-details"   options={{ headerShown: false, animation: 'slide_from_right' }} />
         <Stack.Screen name="tag/[name]"     options={{ headerShown: false, animation: 'slide_from_right' }} />

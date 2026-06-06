@@ -124,18 +124,20 @@ function PostCard({ item, onShare }: { item: typeof POSTS[number]; onShare: () =
         </Pressable>
       </View>
 
-      {/* Caption + hashtags */}
-      <Text style={c.caption}>{item.caption}</Text>
-      {item.tags.length > 0 && (
-        <View style={c.hashtagRow}>
-          {item.tags.map(t => {
-            const slug = t.toLowerCase().replace(/\W+/g, '');
-            return (
-              <Pressable key={t} onPress={() => router.push(`/tag/${slug}`)}>
-                <Text style={c.hashtag}>#{slug}</Text>
-              </Pressable>
-            );
-          })}
+      {/* Caption: bold author name + text inline, hashtags below */}
+      {(item.caption || item.tags.length > 0) && (
+        <View style={c.captionBlock}>
+          {item.caption ? (
+            <Text style={c.caption}>
+              <Text style={c.captionAuthor}>{item.author} </Text>
+              {item.caption}
+            </Text>
+          ) : null}
+          {item.tags.length > 0 && (
+            <Text style={c.hashtagLine}>
+              {item.tags.map(t => `#${t.toLowerCase().replace(/\W+/g, '')}`).join('  ')}
+            </Text>
+          )}
         </View>
       )}
     </View>
@@ -280,12 +282,13 @@ const c = StyleSheet.create({
   venueRow:    { flexDirection: 'row', alignItems: 'center' },
   venueLink:   { fontSize: 13, color: Colors.primaryBlue, fontWeight: '600' },
   photo:        { width: '100%', height: 200, borderRadius: 12, backgroundColor: Colors.lightGrey },
-  caption:      { fontSize: 14, color: Colors.black, lineHeight: 21 },
-  actionsRow:   { flexDirection: 'row', alignItems: 'center', gap: 20 },
-  actionBtn:    { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  actionCount:  { fontSize: 13, color: Colors.naturalGrey },
-  hashtagRow:   { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  hashtag:      { fontSize: 13, color: Colors.primaryBlue },
+  actionsRow:    { flexDirection: 'row', alignItems: 'center', gap: 20 },
+  actionBtn:     { flexDirection: 'row', alignItems: 'center', gap: 5 },
+  actionCount:   { fontSize: 13, color: Colors.naturalGrey },
+  captionBlock:  { gap: 4 },
+  caption:       { fontSize: 14, color: Colors.black, lineHeight: 21 },
+  captionAuthor: { fontWeight: '700', color: Colors.black },
+  hashtagLine:   { fontSize: 13, color: Colors.primaryBlue, lineHeight: 20 },
 
   // ── Invite card ──
   inviteCard:          { backgroundColor: '#EBF5FB', borderRadius: 16, padding: 14, gap: 12,

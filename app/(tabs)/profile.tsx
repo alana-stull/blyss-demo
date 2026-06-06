@@ -5,7 +5,7 @@ import { router } from 'expo-router';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Pencil, Settings, Bookmark, MapPin, Clock } from 'lucide-react-native';
-import { loadProfile } from '@/lib/store';
+import { loadProfile, loadMyPosts, FeedPost } from '@/lib/store';
 import { ScaleBtn } from '@/components/ScaleBtn';
 import { Colors } from '@/constants/Colors';
 import { VENUES } from '@/lib/venues';
@@ -124,10 +124,12 @@ export default function ProfileScreen() {
   const [tab,          setTab]          = useState<Tab>('events');
   const [savedVenues,  setSavedVenues]  = useState<SavedVenue[]>([]);
   const [profilePic,   setProfilePic]   = useState<string | null>(null);
+  const [myPosts,      setMyPosts]      = useState<FeedPost[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       loadProfile().then(setProfile);
+      loadMyPosts().then(setMyPosts);
       AsyncStorage.getItem('blyss_saved_venues').then(raw => {
         setSavedVenues(raw ? JSON.parse(raw) : []);
       });
@@ -192,7 +194,7 @@ export default function ProfileScreen() {
             <Text style={s.statNum}>24</Text>
             <Text style={s.statLabel}>Planned</Text>
           </Pressable>
-          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push({ pathname: '/friends-list', params: { tab: 'attended' } })}>
+          <Pressable style={({ pressed }) => [s.stat, pressed && { opacity: 0.7 }]} onPress={() => router.push('/attended')}>
             <Text style={s.statNum}>87</Text>
             <Text style={s.statLabel}>Attended</Text>
           </Pressable>
@@ -222,9 +224,35 @@ export default function ProfileScreen() {
           ))}
 
           {tab === 'posts' && (
-            <View style={s.empty}>
-              <Text style={s.emptyText}>No posts yet</Text>
-            </View>
+            myPosts.length === 0 ? (
+              <View style={s.empty}>
+                <Text style={s.emptyText}>No posts yet</Text>
+              </View>
+            ) : (
+              myPosts.map(post => (
+                <View key={post.id} style={s.postCard}>
+                  {post.image ? (
+                    <Image source={{ uri: post.image }} style={s.postImage} resizeMode="cover" />
+                  ) : null}
+                  <View style={s.postBody}>
+                    {post.venue ? (
+                      <Pressable onPress={() => router.push(`/venue/${post.venueId}`)}>
+                        <Text style={s.postVenue}>{post.venue}</Text>
+                      </Pressable>
+                    ) : null}
+                    {post.caption ? (
+                      <Text style={s.postCaption}>{post.caption}</Text>
+                    ) : null}
+                    {post.tags.length > 0 && (
+                      <Text style={s.postTags}>
+                        {post.tags.map(t => `#${t}`).join('  ')}
+                      </Text>
+                    )}
+                    <Text style={s.postTime}>{post.time}</Text>
+                  </View>
+                </View>
+              ))
+            )
           )}
 
           {tab === 'saved' && (
@@ -335,4 +363,18 @@ const s = StyleSheet.create({
   // Empty
   empty:     { alignItems: 'center', paddingVertical: 60 },
   emptyText: { fontSize: 15, color: Colors.naturalGrey },
+
+  // Post card (Posts tab)
+  postCard: {
+    backgroundColor: Colors.white, borderRadius: 14,
+    shadowColor: '#000', shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.10, shadowRadius: 10, elevation: 4,
+    overflow: 'hidden', marginBottom: 4,
+  },
+  postImage:   { width: '100%', height: 200 },
+  postBody:    { padding: 12, gap: 4 },
+  postVenue:   { fontSize: 13, fontWeight: '600', color: Colors.primaryBlue },
+  postCaption: { fontSize: 14, color: Colors.black, lineHeight: 20 },
+  postTags:    { fontSize: 13, color: Colors.primaryBlue },
+  postTime:    { fontSize: 12, color: Colors.naturalGrey, marginTop: 2 },
 });

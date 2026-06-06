@@ -81,7 +81,10 @@ export default function VibeScreen() {
               </Text>
             </Pressable>
           </View>
-          <Pressable style={s.eitherBtn} onPress={() => selectOption('Either')}>
+          <Pressable
+            style={[s.eitherBtn, currentAnswer === 'Either' && s.eitherBtnSelected]}
+            onPress={() => selectOption('Either')}
+          >
             <Text style={[s.eitherText, currentAnswer === 'Either' && s.eitherTextSelected]}>
               Either works for me
             </Text>
@@ -126,7 +129,17 @@ const s = StyleSheet.create({
   },
   eitherBtn: {
     alignItems: 'center',
-    paddingVertical: 14,
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E3E4E6',
+    backgroundColor: 'white',
+    marginTop: 4,
+  },
+  eitherBtnSelected: {
+    backgroundColor: '#E8F2F8',
+    borderColor: '#4A7FA5',
   },
   eitherText: {
     fontSize: 14,

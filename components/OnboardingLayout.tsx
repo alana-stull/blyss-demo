@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react-native';
 import { router } from 'expo-router';
 import { Colors } from '@/constants/Colors';
 import { LinearGradient } from 'expo-linear-gradient';
+import { ScaleBtn } from '@/components/ScaleBtn';
 
 interface OnboardingLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface OnboardingLayoutProps {
   showBackArrow?: boolean;
   question?: string;
   subtitle?: string;
+  footerNote?: string;
   continueDisabled?: boolean;
   onContinue?: () => void;
 }
@@ -24,6 +26,7 @@ export function OnboardingLayout({
   showBackArrow = true,
   question,
   subtitle,
+  footerNote,
   continueDisabled = false,
   onContinue,
 }: OnboardingLayoutProps) {
@@ -83,13 +86,14 @@ export function OnboardingLayout({
           {children}
         </View>
 
+        {footerNote && <Text style={s.footerNote}>{footerNote}</Text>}
+
         {/* Continue button */}
         {onContinue && (
-          <Pressable
-            style={[
-              s.continueBtn,
-              continueDisabled ? s.continueBtnDisabled : s.continueBtnActive,
-            ]}
+          <ScaleBtn
+            containerStyle={s.continueBtnContainer}
+            style={[s.continueBtn, continueDisabled ? s.continueBtnDisabled : s.continueBtnActive]}
+            pressedStyle={{ backgroundColor: '#3A6A8A' }}
             onPress={onContinue}
             disabled={continueDisabled}
           >
@@ -101,7 +105,7 @@ export function OnboardingLayout({
             >
               Continue
             </Text>
-          </Pressable>
+          </ScaleBtn>
         )}
       </SafeAreaView>
     </View>
@@ -149,11 +153,21 @@ const s = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 28,
   },
-  continueBtn: {
+  footerNote: {
+    fontSize: 13,
+    color: '#8B8F94',
+    textAlign: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 112,
+    paddingTop: 12,
+  },
+  continueBtnContainer: {
     position: 'absolute',
     bottom: 36,
     left: 24,
     right: 24,
+  },
+  continueBtn: {
     height: 52,
     borderRadius: 10,
     alignItems: 'center',

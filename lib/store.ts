@@ -121,6 +121,30 @@ const EXPERIENCE_TO_CATEGORY: Record<string, string[]> = {
   'Arts & Culture':['activity'],
 };
 
+// interests[] strings (from "What's your scene?" screen) → venue categories
+const INTEREST_TO_CATEGORY: Record<string, string[]> = {
+  'Activities':  ['activity'],
+  'Arcade':      ['activity'],
+  'Bars':        ['bar'],
+  'Brunch':      ['restaurant', 'coffee'],
+  'Coffee':      ['coffee'],
+  'Comedy':      ['activity', 'bar'],
+  'Concerts':    ['bar', 'activity'],
+  'Fitness':     ['activity', 'outdoor'],
+  'Galleries':   ['activity'],
+  'Hiking':      ['outdoor'],
+  'Karaoke':     ['bar', 'activity'],
+  'Movies':      ['activity'],
+  'Museums':     ['activity'],
+  'Nightlife':   ['bar'],
+  'Parks':       ['outdoor'],
+  'Restaurants': ['restaurant'],
+  'Rooftops':    ['bar', 'restaurant'],
+  'Shows':       ['activity', 'bar'],
+  'Sports':      ['outdoor', 'activity'],
+  'Trivia':      ['bar', 'activity'],
+};
+
 const GROUP_SIZE_RANGE: Record<GroupSize, [number, number]> = {
   solo:  [1, 2],
   duo:   [1, 4],
@@ -175,14 +199,18 @@ export function scoreVenue(venue: Venue, profile: UserProfile): ScoredVenue {
   if (venue.avg_cost_pp === 0) reasons.push('Free!');
   else if (venue.avg_cost_pp <= 15) reasons.push(`~$${venue.avg_cost_pp}/person`);
 
-  // 5. Category match via experiences[]
+  // 5. Category match via experiences[] and interests[]
   const exps = profile.experiences ?? [];
   const matchedCats = new Set<string>();
   for (const exp of exps) {
     const cats = EXPERIENCE_TO_CATEGORY[exp] ?? [exp];
     cats.forEach(c => matchedCats.add(c));
   }
-  // Fall back to legacy categories if no experiences
+  for (const interest of (profile.interests ?? [])) {
+    const cats = INTEREST_TO_CATEGORY[interest] ?? [];
+    cats.forEach(c => matchedCats.add(c));
+  }
+  // Fall back to legacy categories if no experiences or interests
   const legacyCats = profile.categories ?? [];
   for (const c of legacyCats) matchedCats.add(c);
 
@@ -268,4 +296,19 @@ export function pushPost(data: {
   const post: FeedPost = { ...data, id: `np-${Date.now()}`, likes: 0, comments: 0, time: 'Just now' };
   NEW_POST_QUEUE.unshift(post);
   return post;
+}
+
+// ─── My posts (profile Posts tab) ────────────────────────────────────────────
+
+const MY_POSTS_KEY = '@blyss_my_posts';
+
+export async function saveMyPost(post: FeedPost): Promise<void> {
+  const raw = await AsyncStorage.getItem(MY_POSTS_KEY);
+  const existing: FeedPost[] = raw ? JSON.parse(raw) : [];
+  await AsyncStorage.setItem(MY_POSTS_KEY, JSON.stringify([post, ...existing]));
+}
+
+export async function loadMyPosts(): Promise<FeedPost[]> {
+  const raw = await AsyncStorage.getItem(MY_POSTS_KEY);
+  return raw ? JSON.parse(raw) : [];
 }

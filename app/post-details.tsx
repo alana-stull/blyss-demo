@@ -8,7 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import {
   ChevronLeft, ChevronRight, MapPin, User, Hash, X, Search, Check,
 } from 'lucide-react-native';
-import { MOCK_FRIENDS, pushPost } from '@/lib/store';
+import { MOCK_FRIENDS, pushPost, saveMyPost } from '@/lib/store';
 import { VENUES } from '@/lib/venues';
 import type { Venue } from '@/lib/venues';
 import { Colors } from '@/constants/Colors';
@@ -252,7 +252,7 @@ export default function PostDetailsScreen() {
   }
 
   function handlePost() {
-    pushPost({
+    const post = pushPost({
       image:   firstUri ?? '',
       venue:   venue?.name   ?? '',
       venueId: venue?.venue_id ?? '',
@@ -260,7 +260,8 @@ export default function PostDetailsScreen() {
       caption,
       tags:    hashtags,
     });
-    router.replace('/(tabs)/friends');
+    saveMyPost(post);
+    router.dismissAll();
   }
 
   return (
